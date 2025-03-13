@@ -32,9 +32,11 @@
 
   --main-color: rgb(12 12 13);
   --main-font-size: 16px;
+  --main-icon-size: 24px;
   --body-bg-color: rgb(255 255 255);
-  --progressBar-color: rgb(10 132 255);
-  --progressBar-bg-color: rgb(221 221 222);
+  --progressBar-height: 4px;
+  --progressBar-color: var(--button-hover-color);
+  --progressBar-bg-color: var(--toolbar-bg-color);
   --progressBar-blend-color: rgb(116 177 239);
   --scrollbar-color: auto;
   --scrollbar-bg-color: auto;
@@ -47,11 +49,15 @@
   --toolbar-border-color: rgb(184 184 184);
   --toolbar-box-shadow: 0 1px 0 var(--toolbar-border-color);
   --toolbar-border-bottom: none;
-  --toolbar-height: 50px;
+  --toolbar-height: 36px;
   --toolbarSidebar-box-shadow: inset calc(-1px * var(--dir-factor)) 0 0
       rgb(0 0 0 / 0.25),
     0 1px 0 rgb(0 0 0 / 0.15), 0 0 1px rgb(0 0 0 / 0.1);
   --toolbarSidebar-border-bottom: none;
+  --icon-size-16: 16px;
+  --icon-size-24: 24px;
+  --icon-size-32: 32px;
+  --icon-size-48: 48px;
   --button-color: rgb(34 55 72);
   --button-hover-color: rgb(9 174 152);
   --button-hover-text-color: rgb(255 255 255);
@@ -71,7 +77,7 @@
   --treeitem-hover-color: rgb(0 0 0 / 0.9);
   --treeitem-selected-color: rgb(0 0 0 / 0.9);
   --treeitem-selected-bg-color: rgb(0 0 0 / 0.25);
-  --thumbnail-hover-color: rgb(9 174 152);
+  --thumbnail-hover-color: var(--button-hover-color);
   --thumbnail-selected-color: rgb(34 55 72);
   --thumbnail-text-color: rgb(255 255 255);
   --doorhanger-bg-color: var(--toolbar-bg-color);
@@ -95,6 +101,7 @@
 html.is-light {
   --main-color: rgb(28 32 36);
   --body-bg-color: rgb(250 250 250);
+  --progressBar-color: var(--main-color);
   --toolbar-bg-color: rgb(226 230 233);
   --toolbar-border-color: rgb(198 204 210);
   --button-color: var(--main-color);
@@ -109,6 +116,7 @@ html.is-light {
 html.is-dark {
   --main-color: rgb(255 255 255);
   --body-bg-color: rgb(28 32 36);
+  --progressBar-color: var(--main-color);
   --toolbar-bg-color: rgb(45 51 57);
   --toolbar-border-color: rgb(89 102 115);
   --button-color: var(--main-color);
@@ -174,6 +182,7 @@ html,
 body {
   height: 100%;
   width: 100%;
+  font-size: var(--main-font-size);
 }
 
 body {
@@ -226,14 +235,14 @@ body {
 
 #sidebarContainer {
   position: absolute;
-  inset-block: var(--toolbar-height) 0;
+  top: var(--toolbar-height);
+  bottom: 0;
   inset-inline-start: calc(-1 * var(--sidebar-width));
   width: var(--sidebar-width);
   min-width: calc(var(--sidebar-width) + 1px);
   visibility: hidden;
   z-index: 100;
   font: message-box;
-  border-top: 1px solid rgb(51 51 51);
   border-inline-end: var(--doorhanger-border-color-whcm);
   transition-property: inset-inline-start;
   transition-duration: var(--sidebar-transition-duration);
@@ -295,7 +304,6 @@ body {
 :is(.toolbar, .editorParamsToolbar, #sidebarContainer)
   :is(input, button, select) {
   outline: none;
-  font: message-box;
 }
 
 #toolbarContainer {
@@ -323,17 +331,108 @@ body {
 #toolbarContainer,
 .editorParamsToolbar {
   position: relative;
-  height: var(--toolbar-height);
   background-color: var(--toolbar-bg-color);
   box-shadow: var(--toolbar-box-shadow);
   border-bottom: var(--toolbar-border-bottom);
+}
+
+#outerContainer:has(#sidebarToggle.icon-size-16) {
+  --toolbar-height: 36px;
+  --doorhanger-shift: 4px;
+
+  #toolbarViewer {
+    height: var(--toolbar-height);
+  }
+
+  #findbar {
+    top: calc(var(--toolbar-height) + var(--progressBar-height));
+    left: var(--doorhanger-shift);
+  }
+
+  #sidebarContainer {
+    top: var(--toolbar-height);
+  }
+
+  #secondaryToolbar {
+    top: calc(var(--toolbar-height) + var(--progressBar-height));
+    right: var(--doorhanger-shift);
+  }
+}
+
+#outerContainer:has(#sidebarToggle.icon-size-24) {
+  --toolbar-height: 42px;
+  --doorhanger-shift: 8px;
+
+  #toolbarViewer {
+    height: var(--toolbar-height);
+  }
+
+  #findbar {
+    top: calc(var(--toolbar-height) + var(--progressBar-height));
+    left: var(--doorhanger-shift);
+  }
+
+  #sidebarContainer {
+    top: var(--toolbar-height);
+  }
+
+  #secondaryToolbar {
+    top: calc(var(--toolbar-height) + var(--progressBar-height));
+    right: var(--doorhanger-shift);
+  }
+}
+
+#outerContainer:has(#sidebarToggle.icon-size-32) {
+  --toolbar-height: 50px;
+  --doorhanger-shift: 12px;
+
+  #toolbarViewer {
+    height: var(--toolbar-height);
+  }
+
+  #findbar {
+    top: calc(var(--toolbar-height) + var(--progressBar-height));
+    left: var(--doorhanger-shift);
+  }
+
+  #sidebarContainer {
+    top: var(--toolbar-height);
+  }
+
+  #secondaryToolbar {
+    top: calc(var(--toolbar-height) + var(--progressBar-height));
+    right: var(--doorhanger-shift);
+  }
+}
+
+#outerContainer:has(#sidebarToggle.icon-size-48) {
+  --toolbar-height: 68px;
+  --doorhanger-shift: 21px;
+
+  #toolbarViewer {
+    height: var(--toolbar-height);
+  }
+
+  #findbar {
+    top: calc(var(--toolbar-height) + var(--progressBar-height));
+    left: var(--doorhanger-shift);
+  }
+
+  #sidebarContainer {
+    top: var(--toolbar-height);
+  }
+
+  #secondaryToolbar {
+    top: calc(var(--toolbar-height) + var(--progressBar-height));
+    right: var(--doorhanger-shift);
+  }
 }
 
 #toolbarViewer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: var(--toolbar-height);
+  min-height: var(--toolbar-height);
 }
 
 #loadingBar {
@@ -344,7 +443,7 @@ body {
 
   position: absolute;
   inset-inline: 0 var(--progressBar-end-offset);
-  height: 4px;
+  height: var(--progressBar-height);
   background-color: var(--progressBar-bg-color);
   border-bottom: 1px solid var(--toolbar-border-color);
   transition-property: inset-inline-start;
@@ -494,10 +593,6 @@ body {
   inset-inline-end: calc(var(--editor-toolbar-base-offset) + 84px);
 }
 
-#editorStampAddImage::before {
-  mask-image: var(--editorParams-stampAddImage-icon);
-}
-
 .doorHanger,
 .doorHangerRight {
   border-radius: 2px;
@@ -563,12 +658,15 @@ body {
     background-color: var(--field-bg-color);
     border: 1px solid var(--field-border-color);
     border-radius: 2px;
-    font-size: var(--main-font-size);
+    font-size: inherit;
   }
 }
 
 #toolbarViewerRight {
   padding-inline-end: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 #toolbarSidebarRight {
@@ -697,6 +795,7 @@ body {
   top: 5px;
   right: 10px;
   content: "\f078";
+  font-size: var(--main-font-size);
 }
 
 .dropdownToolbarButton > select {
@@ -740,8 +839,6 @@ body {
 
 .toolbarButton::before {
   opacity: var(--toolbar-icon-opacity);
-  top: 6px;
-  left: 6px;
 }
 
 .toolbarButton:is(:hover, :focus-visible)::before {
@@ -769,29 +866,74 @@ body {
 }
 
 .icon {
-  position: relative;
-  display: inline-block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   text-rendering: auto;
   -webkit-font-smoothing: antialiased;
   font: var(--fa-font-solid) !important;
+
+  &::before {
+    width: var(--main-icon-size);
+    height: var(--main-icon-size);
+    font-size: var(--main-icon-size);
+    background-color: transparent !important;
+  }
+
+  &.icon-size-16 {
+    width: 26px;
+    height: 26px;
+
+    &::before {
+      width: var(--icon-size-16);
+      height: var(--icon-size-16);
+      font-size: var(--icon-size-16) !important;
+    }
+  }
+
+  &.icon-size-24 {
+    width: 34px;
+    height: 34px;
+
+    &::before {
+      width: var(--icon-size-24);
+      height: var(--icon-size-24);
+      font-size: var(--icon-size-24) !important;
+    }
+  }
+
+  &.icon-size-32 {
+    width: 42px;
+    height: 42px;
+
+    &::before {
+      width: var(--icon-size-32);
+      height: var(--icon-size-32);
+      font-size: var(--icon-size-32) !important;
+    }
+  }
+
+  &.icon-size-48 {
+    width: 60px;
+    height: 60px;
+
+    &::before {
+      width: var(--icon-size-48);
+      height: var(--icon-size-48);
+      font-size: var(--icon-size-48) !important;
+    }
+  }
 }
 
 .icon.toggled {
   background-color: var(--button-hover-color);
 }
 
-.icon::before {
-  background-color: transparent !important;
-  font-size: 20px;
-}
-
 .icon-sidebar::before {
   content: "\f0c9";
-  font-size: 22px;
 }
 
 .icon-left::before {
-  margin-left: 2px;
   content: "\f053";
 }
 
@@ -825,7 +967,6 @@ body {
 
 .icon-ellipsis::before {
   content: "\f142";
-  margin-left: 2px;
 }
 
 .pdfSidebarNotification::after {
@@ -881,11 +1022,14 @@ body {
 #pageNumber {
   border: 1px solid var(--toolbar-border-color);
   margin: 0;
+  padding: 0;
+  height: 27px;
   -moz-appearance: textfield; /* hides the spinner in moz */
   text-align: center;
   width: 40px;
   background-size: 0 0;
   transition-property: none;
+  font-size: inherit;
 
   /*#if !MOZCENTRAL*/
   &::-webkit-inner-spin-button {
@@ -909,7 +1053,6 @@ body {
   margin: 2px;
   border-radius: 2px;
   color: var(--main-color);
-  font: message-box;
   line-height: 14px;
   text-align: left;
   user-select: none;
@@ -923,8 +1066,9 @@ body {
   }
 }
 
-#numPages.toolbarLabel {
-  padding-inline-start: 3px;
+#numPages {
+  padding: 0 10px;
+  color: var(--main-color);
 }
 
 #thumbnailView,
@@ -1053,10 +1197,8 @@ a:focus > .thumbnail > .thumbnailImage,
 }
 .treeItemToggler::before {
   inset-inline-end: 4px;
-  mask-image: var(--treeitem-expanded-icon);
 }
 .treeItemToggler.treeItemsHidden::before {
-  mask-image: var(--treeitem-collapsed-icon);
   transform: scaleX(var(--dir-factor));
 }
 .treeItemToggler.treeItemsHidden ~ .treeItems {
@@ -1188,8 +1330,6 @@ dialog :link {
 }
 
 .toolbarButton {
-  width: 33px;
-  height: 33px;
   cursor: pointer;
   color: var(--button-color);
   transition-property: background-color;
@@ -1241,22 +1381,20 @@ dialog :link {
 #secondaryToolbar {
   background-color: var(--toolbar-bg-color);
   cursor: default;
-  font: message-box;
-  font-size: 12px;
+  font-size: inherit;
   height: auto;
   inset-inline-end: 4px;
   line-height: 14px;
-  margin: 4px 2px;
   position: absolute;
   text-align: left;
-  top: var(--toolbar-height);
+  top: calc(var(--toolbar-height) + var(--progressBar-height));
   z-index: 30000;
 
   :is(button, a) {
     width: 100%;
     margin: 0;
     text-align: center;
-    font: message-box;
+    font-size: inherit;
     outline: none;
   }
 
@@ -1271,16 +1409,14 @@ dialog :link {
   align-items: center;
   background-color: var(--toolbar-bg-color);
   cursor: default;
-  font: message-box;
-  font-size: 12px;
+  font-size: inherit;
   height: max-content;
   line-height: 14px;
-  margin: 4px 2px;
   min-width: 300px;
   padding: 0 4px;
   position: absolute;
   text-align: left;
-  top: var(--toolbar-height);
+  top: calc(var(--toolbar-height) + var(--progressBar-height));
   left: 5px;
   z-index: 30000;
 
@@ -1290,7 +1426,6 @@ dialog :link {
   }
 
   :is(button, input) {
-    font: message-box;
     outline: none;
   }
 
@@ -1325,6 +1460,7 @@ dialog :link {
 
     #findInput {
       width: 200px;
+      font-size: inherit;
 
       /*#if !MOZCENTRAL*/
       &::-webkit-input-placeholder {
@@ -1340,14 +1476,6 @@ dialog :link {
         background-color: rgb(255 102 102);
       }
     }
-
-    #findPrevious::before {
-      mask-image: var(--findbarButton-previous-icon);
-    }
-
-    #findNext::before {
-      mask-image: var(--findbarButton-next-icon);
-    }
   }
 
   #findbarOptionsOneContainer,
@@ -1358,6 +1486,8 @@ dialog :link {
   }
 
   #findbarMessageContainer {
+    display: flex;
+    flex-direction: row;
     width: max-content;
 
     #findResultsCount {
@@ -1388,6 +1518,8 @@ dialog :link {
 
     > #findbarMessageContainer {
       height: auto;
+      flex-direction: column;
+      align-items: center;
 
       > * {
         clear: both;
@@ -1464,7 +1596,7 @@ dialog :link {
   display: none !important;
 }
 
-@media all and (max-width: 900px){
+@media all and (max-width: 900px) {
   #outerContainer:not(.sidebarOpen) #toolbarViewerMiddle {
     transform: none;
   }
@@ -1477,7 +1609,7 @@ dialog :link {
   #outerContainer.sidebarOpen #viewerContainer {
     inset-inline-start: 0 !important;
   }
-  .splitToolbarButton {
+  .documentInfo {
     display: none;
   }
 }
@@ -1496,7 +1628,7 @@ dialog :link {
     transform: translateX(0);
   }
   #secondaryToolbarToggle {
-    display: block;
+    display: flex;
   }
 }
 

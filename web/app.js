@@ -183,7 +183,8 @@ const PDFViewerApplication = {
   _caretBrowsing: null,
   _isScrolling: false,
   _smallScreenResolution: 560,
-  _maximumIconSize: 22,
+  _maximumFontSize: 24,
+  _iconSizes: [16, 24, 32, 48],
 
   // Called once when the document is loaded.
   async initialize(appConfig) {
@@ -845,11 +846,23 @@ const PDFViewerApplication = {
     document.documentElement.classList.add(themeClass);
   },
 
-  setIconSize(iconSize) {
-    if (iconSize <= this._maximumIconSize) {
-      const value = `${iconSize}px`;
-      this.appConfig.toolbar.pageNumber.style.fontSize = value;
-      this.appConfig.toolbar.scaleSelect.style.fontSize = value;
+  setToolbarFontSize(fontSize) {
+    if (fontSize <= this._maximumFontSize) {
+      this.appConfig.toolbar.container.style.fontSize = `${fontSize}px`;
+    }
+  },
+
+  setToolbarIconSize(iconSize) {
+    if (this._iconSizes.includes(iconSize)) {
+      const iconElements = document.getElementsByClassName("icon");
+
+      for (const iconElement of iconElements) {
+        for (const initialSize of this._iconSizes) {
+          iconElement.classList.remove(`icon-size-${initialSize}`);
+        }
+
+        iconElement.classList.add(`icon-size-${iconSize}`);
+      }
     }
   },
 
