@@ -867,6 +867,7 @@ const PDFViewerApplication = {
   },
 
   setInitialScale(scaleValue) {
+    this.toolbar?.setPageScale(scaleValue, scaleValue);
     this.pdfViewer.currentScaleValue = scaleValue;
   },
 
