@@ -432,7 +432,8 @@ const PDFViewerApplication = {
     this.pdfScriptingManager = pdfScriptingManager;
 
     const container = appConfig.mainContainer,
-      viewer = appConfig.viewerContainer;
+      viewer = appConfig.viewerContainer,
+      emptyState = appConfig.emptyState;
     const annotationEditorMode = AppOptions.get("annotationEditorMode");
     const pageColors =
       AppOptions.get("forcePageColors") ||
@@ -466,6 +467,7 @@ const PDFViewerApplication = {
     const pdfViewer = new PDFViewer({
       container,
       viewer,
+      emptyState,
       eventBus,
       renderingQueue: pdfRenderingQueue,
       linkService: pdfLinkService,
@@ -697,6 +699,9 @@ const PDFViewerApplication = {
       file = AppOptions.get("defaultUrl");
     }
 
+    // eslint-disable-next-line no-unused-expressions
+    file ? this.hideEmptyStateOverlay() : this.showEmptyStateOverlay();
+
     if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
       const fileInput = (this._openFileInput = document.createElement("input"));
       fileInput.id = "fileInput";
@@ -927,6 +932,14 @@ const PDFViewerApplication = {
     this.toolbar.uploading = false;
     this.appConfig.toolbar?.upload?.classList.add("hidden");
     this.appConfig.secondaryToolbar?.uploadButton.classList.add("hidden");
+  },
+
+  showEmptyStateOverlay() {
+    this.appConfig.emptyState.container.classList.remove("hidden");
+  },
+
+  hideEmptyStateOverlay() {
+    this.appConfig.emptyState.container.classList.add("hidden");
   },
 
   get pagesCount() {
@@ -1202,6 +1215,7 @@ const PDFViewerApplication = {
     return loadingTask.promise.then(
       pdfDocument => {
         this.load(pdfDocument);
+        this.hideEmptyStateOverlay();
       },
       reason => {
         if (loadingTask !== this.pdfLoadingTask) {

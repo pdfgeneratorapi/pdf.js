@@ -87,6 +87,7 @@ function isValidAnnotationEditorMode(mode) {
  * @typedef {Object} PDFViewerOptions
  * @property {HTMLDivElement} container - The container for the viewer element.
  * @property {HTMLDivElement} [viewer] - The viewer element.
+ * @property {HTMLDivElement} [emptyState] - The empty state element.
  * @property {EventBus} eventBus - The application event bus.
  * @property {IPDFLinkService} [linkService] - The navigation/linking service.
  * @property {IDownloadManager} [downloadManager] - The download manager
@@ -333,6 +334,11 @@ class PDFViewer {
     } else {
       this.renderingQueue = options.renderingQueue;
     }
+
+    // Empty state button click event
+    options.emptyState.uploadButton.addEventListener("click", function () {
+      options.eventBus.dispatch("upload", { source: this });
+    });
 
     const { abortSignal } = options;
     abortSignal?.addEventListener(

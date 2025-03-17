@@ -20,7 +20,7 @@ Adobe CMap resources are covered by their own copyright but the same license:
 
 See https://github.com/adobe-type-tools/cmap-resources
 -->
-<html dir="ltr" class="is-light" mozdisallowselectionprint>
+<html dir="ltr" mozdisallowselectionprint>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -280,6 +280,15 @@ See https://github.com/adobe-type-tools/cmap-resources
 
         <div id="viewerContainer" tabindex="0">
           <div id="viewer" class="pdfViewer"></div>
+        </div>
+
+        <div id="emptyStateContainer" class="hidden">
+          <span>
+            Drag & drop your PDF here or click upload
+          </span>
+          <button id="emptyStateButton" type="button" title="Upload" data-l10n-id="pdfjs-upload-button">
+            Upload
+          </button>
         </div>
       </div> <!-- mainContainer -->
 

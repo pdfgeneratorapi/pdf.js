@@ -39,6 +39,10 @@ function getViewerConfiguration() {
     appContainer: document.body,
     mainContainer: document.getElementById("viewerContainer"),
     viewerContainer: document.getElementById("viewer"),
+    emptyState: {
+      container: document.getElementById("emptyStateContainer"),
+      uploadButton: document.getElementById("emptyStateButton"),
+    },
     toolbar: {
       container: document.getElementById("toolbarViewer"),
       numPages: document.getElementById("numPages"),
