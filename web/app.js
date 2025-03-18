@@ -710,7 +710,7 @@ const PDFViewerApplication = {
       fileInput.value = null;
       document.body.append(fileInput);
 
-      fileInput.addEventListener("change", function (evt) {
+      fileInput.addEventListener("change", function(evt) {
         const { files } = evt.target;
         if (!files || files.length === 0) {
           return;
@@ -722,26 +722,37 @@ const PDFViewerApplication = {
       });
 
       // Enable dragging-and-dropping a new PDF file onto the viewerContainer.
-      appConfig.mainContainer.addEventListener("dragover", function (evt) {
-        for (const item of evt.dataTransfer.items) {
-          if (item.type === "application/pdf") {
-            evt.dataTransfer.dropEffect =
-              evt.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
-            stopEvent(evt);
+      for (const container of [
+        appConfig.mainContainer,
+        appConfig.emptyState.container,
+      ]) {
+        container.addEventListener("dragover", function (evt) {
+          for (const item of evt.dataTransfer.items) {
+            if (item.type === "application/pdf") {
+              evt.dataTransfer.dropEffect =
+                evt.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
+              stopEvent(evt);
+              return;
+            }
+          }
+        });
+      }
+
+      for (const container of [
+        appConfig.mainContainer,
+        appConfig.emptyState.container,
+      ]) {
+        container.addEventListener("drop", function (evt) {
+          if (evt.dataTransfer.files?.[0].type !== "application/pdf") {
             return;
           }
-        }
-      });
-      appConfig.mainContainer.addEventListener("drop", function (evt) {
-        if (evt.dataTransfer.files?.[0].type !== "application/pdf") {
-          return;
-        }
-        stopEvent(evt);
-        eventBus.dispatch("fileinputchange", {
-          source: this,
-          fileInput: evt.dataTransfer,
+          stopEvent(evt);
+          eventBus.dispatch("fileinputchange", {
+            source: this,
+            fileInput: evt.dataTransfer,
+          });
         });
-      });
+      }
     }
 
     if (!AppOptions.get("supportsDocumentFonts")) {
