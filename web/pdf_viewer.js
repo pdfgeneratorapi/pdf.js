@@ -273,13 +273,6 @@ class PDFViewer {
       if (this.container?.tagName !== "DIV" || this.viewer?.tagName !== "DIV") {
         throw new Error("Invalid `container` and/or `viewer` option.");
       }
-
-      if (
-        this.container.offsetParent &&
-        getComputedStyle(this.container).position !== "absolute"
-      ) {
-        throw new Error("The `container` must be absolutely positioned.");
-      }
     }
     this.#resizeObserver.observe(this.container);
 
