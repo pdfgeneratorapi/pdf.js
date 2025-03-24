@@ -883,8 +883,8 @@ const PDFViewerApplication = {
   },
 
   setInitialScale(scaleValue) {
+    AppOptions.set("defaultZoomValue", scaleValue);
     this.toolbar?.setPageScale(scaleValue, scaleValue);
-    this.pdfViewer.currentScaleValue = scaleValue;
   },
 
   showScaleDropdown() {
