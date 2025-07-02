@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { AppOptions } from "../../web/app_options.js";
 import {
   assert,
   isNodeJS,
@@ -118,7 +119,7 @@ class FontLoader {
     }
     font.attached = true;
 
-    if (font.systemFontInfo) {
+    if (font.systemFontInfo && !AppOptions.get("useWorkerFetch")) {
       await this.loadSystemFont(font);
       return;
     }

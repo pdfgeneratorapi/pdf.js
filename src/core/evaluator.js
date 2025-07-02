@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { AppOptions } from "../../web/app_options.js";
 import {
   AbortException,
   assert,
@@ -430,20 +431,22 @@ class PartialEvaluator {
       filename = standardFontNameToFileName[name];
     let data;
 
-    try {
-      if (this.options.standardFontDataUrl !== null) {
-        data = await fetchBinaryData(
-          `${this.options.standardFontDataUrl}${filename}`
-        );
-      } else {
-        // Get the data on the main-thread instead.
-        data = await this.handler.sendWithPromise("FetchStandardFontData", {
-          filename,
-        });
+    if (AppOptions.get("useWorkerFetch") === false) {
+      try {
+        if (this.options.standardFontDataUrl !== null) {
+          data = await fetchBinaryData(
+            `${this.options.standardFontDataUrl}${filename}`
+          );
+        } else {
+          // Get the data on the main-thread instead.
+          data = await this.handler.sendWithPromise("FetchStandardFontData", {
+            filename,
+          });
+        }
+      } catch (ex) {
+        warn(ex);
+        return null;
       }
-    } catch (ex) {
-      warn(ex);
-      return null;
     }
     // Cache the "raw" standard font data, to avoid fetching it repeatedly
     // (see e.g. issue 11399).

@@ -225,7 +225,7 @@ const defaultOptions = {
   },
   enableScripting: {
     /** @type {boolean} */
-    value: typeof PDFJSDev === "undefined" || !PDFJSDev.test("CHROME"),
+    value: false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   enableUpdatedAddImage: {
@@ -439,7 +439,10 @@ const defaultOptions = {
         : "../web/wasm/",
     kind: OptionKind.API,
   },
-
+  useWorkerFetch: {
+    value: true,
+    kind: OptionKind.API,
+  },
   workerPort: {
     /** @type {Object} */
     value: null,
