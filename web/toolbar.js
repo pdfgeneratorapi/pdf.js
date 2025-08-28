@@ -46,6 +46,8 @@ import {
  */
 
 class Toolbar {
+  #colorPicker = null;
+
   #opts;
 
   /**
@@ -125,6 +127,18 @@ class Toolbar {
           data: { action: "pdfjs.image.icon_click" },
         },
       },
+      {
+        element: options.editorSignatureButton,
+        eventName: "switchannotationeditormode",
+        eventDetails: {
+          get mode() {
+            const { classList } = options.editorSignatureButton;
+            return classList.contains("toggled")
+              ? AnnotationEditorType.NONE
+              : AnnotationEditorType.SIGNATURE;
+          },
+        },
+      },
     ];
 
     // Bind the event listeners for click and various other actions.
@@ -147,12 +161,6 @@ class Toolbar {
     document.documentElement.setAttribute("data-toolbar-density", name);
   }
 
-  #setAnnotationEditorUIManager(uiManager, parentContainer) {
-    const colorPicker = new ColorPicker({ uiManager });
-    uiManager.setMainHighlightColorPicker(colorPicker);
-    parentContainer.append(colorPicker.renderMainDropdown());
-  }
-
   setPageNumber(pageNumber, pageLabel) {
     this.pageNumber = pageNumber;
     this.pageLabel = pageLabel;
@@ -172,6 +180,7 @@ class Toolbar {
   }
 
   reset() {
+    this.#colorPicker = null;
     this.pageNumber = 0;
     this.pageLabel = null;
     this.hasPageLabels = false;
@@ -263,17 +272,15 @@ class Toolbar {
     eventBus._on("toolbardensity", this.#updateToolbarDensity.bind(this));
 
     if (editorHighlightColorPicker) {
-      eventBus._on(
-        "annotationeditoruimanager",
-        ({ uiManager }) => {
-          this.#setAnnotationEditorUIManager(
-            uiManager,
-            editorHighlightColorPicker
-          );
-        },
-        // Once the color picker has been added, we don't want to add it again.
-        { once: true }
-      );
+      eventBus._on("annotationeditoruimanager", ({ uiManager }) => {
+        const cp = (this.#colorPicker = new ColorPicker({ uiManager }));
+        uiManager.setMainHighlightColorPicker(cp);
+        editorHighlightColorPicker.append(cp.renderMainDropdown());
+      });
+
+      eventBus._on("mainhighlightcolorpickerupdatecolor", ({ value }) => {
+        this.#colorPicker?.updateColor(value);
+      });
     }
   }
 
@@ -287,6 +294,8 @@ class Toolbar {
       editorInkParamsToolbar,
       editorStampButton,
       editorStampParamsToolbar,
+      editorSignatureButton,
+      editorSignatureParamsToolbar,
     } = this.#opts;
 
     toggleExpandedBtn(
@@ -309,12 +318,18 @@ class Toolbar {
       mode === AnnotationEditorType.STAMP,
       editorStampParamsToolbar
     );
+    toggleExpandedBtn(
+      editorSignatureButton,
+      mode === AnnotationEditorType.SIGNATURE,
+      editorSignatureParamsToolbar
+    );
 
     const isDisable = mode === AnnotationEditorType.DISABLE;
     editorFreeTextButton.disabled = isDisable;
     editorHighlightButton.disabled = isDisable;
     editorInkButton.disabled = isDisable;
     editorStampButton.disabled = isDisable;
+    editorSignatureButton.disabled = isDisable;
   }
 
   #updateUIState(resetNumPages = false) {

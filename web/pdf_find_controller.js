@@ -29,7 +29,6 @@ const FindState = {
 
 const FIND_TIMEOUT = 250; // ms
 const MATCH_SCROLL_OFFSET_TOP = -50; // px
-const MATCH_SCROLL_OFFSET_LEFT = -400; // px
 
 const CHARACTERS_TO_NORMALIZE = {
   "\u2010": "-", // Hyphen
@@ -97,7 +96,7 @@ const NFKC_CHARS_TO_NORMALIZE = new Map();
 let noSyllablesRegExp = null;
 let withSyllablesRegExp = null;
 
-function normalize(text) {
+function normalize(text, options = {}) {
   // The diacritics in the text or in the query can be composed or not.
   // So we use a decomposed text using NFD (and the same for the query)
   // in order to be sure that diacritics are in the same order.
@@ -118,6 +117,7 @@ function normalize(text) {
   }
 
   const hasSyllables = syllablePositions.length > 0;
+  const ignoreDashEOL = options.ignoreDashEOL ?? false;
 
   let normalizationRegex;
   if (!hasSyllables && noSyllablesRegExp) {
@@ -294,6 +294,12 @@ function normalize(text) {
       }
 
       if (p5) {
+        if (ignoreDashEOL) {
+          // Keep the - but remove the EOL.
+          shiftOrigin += 1;
+          eol += 1;
+          return p5.slice(0, -1);
+        }
         // In "X-\ny", "-\n" is removed because an hyphen at the end of a line
         // between two letters is likely here to mark a break in a word.
         // If X is encoded with UTF-32 then it can have a length greater than 1.
@@ -566,10 +572,9 @@ class PDFFindController {
       return;
     }
     this._scrollMatches = false; // Ensure that scrolling only happens once.
-
     const spot = {
       top: MATCH_SCROLL_OFFSET_TOP,
-      left: selectedLeft + MATCH_SCROLL_OFFSET_LEFT,
+      left: selectedLeft,
     };
     scrollIntoView(element, spot, /* scrollMatches = */ true);
   }
@@ -717,7 +722,7 @@ class PDFFindController {
         // kind of whitespaces are replaced by a single " ".
 
         if (p1) {
-          // Escape characters like *+?... to not interfer with regexp syntax.
+          // Escape characters like *+?... to not interfere with regexp syntax.
           return `[ ]*\\${p1}[ ]*`;
         }
         if (p2) {
@@ -771,6 +776,9 @@ class PDFFindController {
   }
 
   #calculateMatch(pageIndex) {
+    if (!this.#state) {
+      return;
+    }
     const query = this.#query;
     if (query.length === 0) {
       return; // Do nothing: the matches should be wiped out already.
@@ -882,13 +890,17 @@ class PDFFindController {
 
     let deferred = Promise.resolve();
     const textOptions = { disableNormalization: true };
+    const pdfDoc = this._pdfDocument;
     for (let i = 0, ii = this._linkService.pagesCount; i < ii; i++) {
       const { promise, resolve } = Promise.withResolvers();
       this._extractTextPromises[i] = promise;
 
-      // eslint-disable-next-line arrow-body-style
-      deferred = deferred.then(() => {
-        return this._pdfDocument
+      deferred = deferred.then(async () => {
+        if (pdfDoc !== this._pdfDocument) {
+          resolve();
+          return;
+        }
+        await pdfDoc
           .getPage(i + 1)
           .then(pdfPage => pdfPage.getTextContent(textOptions))
           .then(
@@ -1185,4 +1197,4 @@ class PDFFindController {
   }
 }
 
-export { FindState, PDFFindController };
+export { FindState, getOriginalIndex, normalize, PDFFindController };

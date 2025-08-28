@@ -17,10 +17,14 @@ import os from "os";
 
 const isMac = os.platform() === "darwin";
 
-function loadAndWait(filename, selector, zoom, setups, options) {
+function loadAndWait(filename, selector, zoom, setups, options, viewport) {
   return Promise.all(
     global.integrationSessions.map(async session => {
       const page = await session.browser.newPage();
+
+      if (viewport) {
+        await page.setViewport(viewport);
+      }
 
       // In order to avoid errors because of checks which depend on
       // a locale.
@@ -49,9 +53,11 @@ function loadAndWait(filename, selector, zoom, setups, options) {
           app_options += `&${key}=${encodeURIComponent(value)}`;
         }
       }
-      const url = `${
-        global.integrationBaseUrl
-      }?file=/test/pdfs/${filename}#zoom=${zoom ?? "page-fit"}${app_options}`;
+
+      const fileParam = filename.startsWith("http")
+        ? filename
+        : `/test/pdfs/${filename}`;
+      const url = `${global.integrationBaseUrl}?file=${fileParam}#zoom=${zoom ?? "page-fit"}${app_options}`;
 
       if (setups) {
         // page.evaluateOnNewDocument allows us to run code before the
@@ -133,13 +139,6 @@ function closePages(pages) {
   return Promise.all(pages.map(([_, page]) => closeSinglePage(page)));
 }
 
-function isVisible(page, selector) {
-  return page.evaluate(
-    sel => document.querySelector(sel)?.checkVisibility(),
-    selector
-  );
-}
-
 async function closeSinglePage(page) {
   // Avoid to keep something from a previous test.
   await page.evaluate(async () => {
@@ -197,6 +196,12 @@ async function clearInput(page, selector, waitForInputEvent = false) {
 async function waitAndClick(page, selector, clickOptions = {}) {
   await page.waitForSelector(selector, { visible: true });
   await page.click(selector, clickOptions);
+}
+
+function waitForPointerUp(page) {
+  return createPromise(page, resolve => {
+    window.addEventListener("pointerup", resolve, { once: true });
+  });
 }
 
 function getSelector(id) {
@@ -456,8 +461,8 @@ async function getFirstSerialized(page, filter = undefined) {
 function getAnnotationStorage(page) {
   return page.evaluate(() =>
     Object.fromEntries(
-      window.PDFViewerApplication.pdfDocument.annotationStorage.serializable.map?.entries() ||
-        []
+      window.PDFViewerApplication.pdfDocument.annotationStorage.serializable
+        .map || []
     )
   );
 }
@@ -538,6 +543,14 @@ async function dragAndDrop(page, selector, translations, steps = 1) {
   await page.waitForSelector("#viewer:not(.noUserSelect)");
 }
 
+function waitForPageChanging(page) {
+  return createPromise(page, resolve => {
+    window.PDFViewerApplication.eventBus.on("pagechanging", resolve, {
+      once: true,
+    });
+  });
+}
+
 function waitForAnnotationEditorLayer(page) {
   return createPromise(page, resolve => {
     window.PDFViewerApplication.eventBus.on(
@@ -558,12 +571,24 @@ function waitForAnnotationModeChanged(page) {
   });
 }
 
-function waitForPageRendered(page) {
-  return createPromise(page, resolve => {
-    window.PDFViewerApplication.eventBus.on("pagerendered", resolve, {
-      once: true,
-    });
-  });
+function waitForPageRendered(page, pageNumber) {
+  return page.evaluateHandle(
+    number => [
+      new Promise(resolve => {
+        const { eventBus } = window.PDFViewerApplication;
+        eventBus.on("pagerendered", function handler(e) {
+          if (
+            !e.isDetailView &&
+            (number === undefined || e.pageNumber === number)
+          ) {
+            resolve();
+            eventBus.off("pagerendered", handler);
+          }
+        });
+      }),
+    ],
+    pageNumber
+  );
 }
 
 function waitForEditorMovedInDOM(page) {
@@ -606,11 +631,6 @@ async function firstPageOnTop(page) {
     }),
   ]);
   return awaitPromise(handle);
-}
-
-async function hover(page, selector) {
-  const rect = await getRect(page, selector);
-  await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
 }
 
 async function setCaretAt(page, pageNumber, text, position) {
@@ -795,6 +815,19 @@ async function switchToEditor(name, page, disable = false) {
   await awaitPromise(modeChangedHandle);
 }
 
+async function selectEditors(name, page) {
+  await kbSelectAll(page);
+  await page.waitForFunction(
+    () => !document.querySelector(`.${name}Editor:not(.selectedEditor)`)
+  );
+}
+
+async function clearEditors(name, page) {
+  await selectEditors(name, page);
+  await page.keyboard.press("Backspace");
+  await waitForStorageEntries(page, 0);
+}
+
 function waitForNoElement(page, selector) {
   return page.waitForFunction(
     sel => !document.querySelector(sel),
@@ -803,9 +836,9 @@ function waitForNoElement(page, selector) {
   );
 }
 
-function isCanvasWhite(page, pageNumber, rectangle) {
+function isCanvasMonochrome(page, pageNumber, rectangle, color) {
   return page.evaluate(
-    (rect, pageN) => {
+    (rect, pageN, col) => {
       const canvas = document.querySelector(
         `.page[data-page-number = "${pageN}"] .canvasWrapper canvas`
       );
@@ -818,27 +851,50 @@ function isCanvasWhite(page, pageNumber, rectangle) {
         rect.width,
         rect.height
       );
-      return new Uint32Array(data.buffer).every(x => x === 0xffffffff);
+      return new Uint32Array(data.buffer).every(x => x === col);
     },
     rectangle,
-    pageNumber
+    pageNumber,
+    color
   );
 }
 
-async function cleanupEditing(pages, switcher) {
-  for (const [, page] of pages) {
-    await page.evaluate(() => {
-      window.uiManager.reset();
-    });
-    // Disable editing mode.
-    await switcher(page, /* disable */ true);
+async function getXY(page, selector) {
+  const rect = await getRect(page, selector);
+  return `${rect.x}::${rect.y}`;
+}
+
+function waitForPositionChange(page, selector, xy) {
+  return page.waitForFunction(
+    (sel, currentXY) => {
+      const bbox = document.querySelector(sel).getBoundingClientRect();
+      return `${bbox.x}::${bbox.y}` !== currentXY;
+    },
+    {},
+    selector,
+    xy
+  );
+}
+
+async function moveEditor(page, selector, n, pressKey) {
+  let xy = await getXY(page, selector);
+  for (let i = 0; i < n; i++) {
+    const handle = await waitForEditorMovedInDOM(page);
+    await pressKey();
+    await awaitPromise(handle);
+    await waitForPositionChange(page, selector, xy);
+    xy = await getXY(page, selector);
   }
 }
+
+// Unicode bidi isolation characters, Fluent adds these markers to the text.
+const FSI = "\u2068";
+const PDI = "\u2069";
 
 export {
   applyFunctionToEditor,
   awaitPromise,
-  cleanupEditing,
+  clearEditors,
   clearInput,
   closePages,
   closeSinglePage,
@@ -847,6 +903,7 @@ export {
   createPromise,
   dragAndDrop,
   firstPageOnTop,
+  FSI,
   getAnnotationSelector,
   getAnnotationStorage,
   getComputedStyleSelector,
@@ -859,9 +916,8 @@ export {
   getSelector,
   getSerialized,
   getSpanRectFromText,
-  hover,
-  isCanvasWhite,
-  isVisible,
+  getXY,
+  isCanvasMonochrome,
   kbBigMoveDown,
   kbBigMoveLeft,
   kbBigMoveRight,
@@ -879,10 +935,13 @@ export {
   kbUndo,
   loadAndWait,
   mockClipboard,
+  moveEditor,
   paste,
   pasteFromClipboard,
+  PDI,
   scrollIntoView,
   selectEditor,
+  selectEditors,
   serializeBitmapDimensions,
   setCaretAt,
   switchToEditor,
@@ -890,11 +949,12 @@ export {
   waitAndClick,
   waitForAnnotationEditorLayer,
   waitForAnnotationModeChanged,
-  waitForEditorMovedInDOM,
   waitForEntryInStorage,
   waitForEvent,
   waitForNoElement,
+  waitForPageChanging,
   waitForPageRendered,
+  waitForPointerUp,
   waitForSandboxTrip,
   waitForSelectedEditor,
   waitForSerialized,
