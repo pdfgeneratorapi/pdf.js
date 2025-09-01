@@ -268,7 +268,7 @@ const defaultOptions = {
   },
   enableSignatureEditor: {
     /** @type {boolean} */
-    value: typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING"),
+    value: true,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   enableUpdatedAddImage: {
@@ -500,7 +500,7 @@ const defaultOptions = {
   },
   verbosity: {
     /** @type {number} */
-    value: 1,
+    value: 0,
     kind: OptionKind.API,
   },
   wasmUrl: {

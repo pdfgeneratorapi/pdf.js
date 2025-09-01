@@ -227,7 +227,6 @@
   ),
 .textLayer {
   .editToolbar {
-    --editor-toolbar-delete-image: url(images/editor-toolbar-delete.svg);
     --editor-toolbar-bg-color: light-dark(#f0f0f4, #2b2a33);
     --editor-toolbar-highlight-image: url(images/toolbarButton-editorHighlight.svg);
     --editor-toolbar-fg-color: light-dark(#2e2e56, #fbfbfe);
@@ -324,9 +323,6 @@
         width: var(--editor-toolbar-height);
 
         &::before {
-          content: "";
-          mask-repeat: no-repeat;
-          mask-position: center;
           display: inline-block;
           background-color: var(--editor-toolbar-fg-color);
           width: 100%;
@@ -343,10 +339,6 @@
 
         &.commentButton::before {
           mask-image: var(--comment-edit-button-icon);
-        }
-
-        &.deleteButton::before {
-          mask-image: var(--editor-toolbar-delete-image);
         }
       }
 

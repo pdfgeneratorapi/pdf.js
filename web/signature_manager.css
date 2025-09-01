@@ -14,7 +14,6 @@
  */
 
 :root {
-  --clear-signature-button-icon: url(images/editor-toolbar-delete.svg);
   --signature-bg: light-dark(#f9f9fb, #2b2a33);
   --signature-hover-bg: light-dark(#f0f0f4, var(--signature-bg));
   --button-signature-bg: transparent;
@@ -78,7 +77,6 @@
 
   .inputWithClearButton {
     --button-dimension: 24px;
-    --clear-button-icon: url(images/messageBar_closingButton.svg);
 
     width: 100%;
     position: relative;
@@ -102,9 +100,6 @@
       display: inline-block;
       width: var(--button-dimension);
       height: var(--button-dimension);
-      background-color: var(--input-text-fg-color);
-      mask-size: cover;
-      mask-image: var(--clear-button-icon);
       padding: 0;
       border: 0;
     }
@@ -381,7 +376,7 @@
             stroke-miterlimit: 10;
 
             &:hover {
-              cursor: var(--draw-cursor);
+              cursor: crosshair;
             }
           }
 
@@ -550,17 +545,6 @@
               flex-shrink: 0;
 
               color: var(--clear-signature-button-color);
-
-              &::after {
-                content: "";
-                display: inline-block;
-                width: 16px;
-                height: 16px;
-                mask-image: var(--clear-signature-button-icon);
-                mask-size: cover;
-                background-color: var(--clear-signature-button-color);
-                flex-shrink: 0;
-              }
             }
 
             &:hover {
@@ -737,12 +721,6 @@
           &::before {
             background-color: var(--button-signature-color);
           }
-        }
-      }
-
-      .deleteButton {
-        &::before {
-          mask-image: var(--clear-signature-button-icon);
         }
       }
 

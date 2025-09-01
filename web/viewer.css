@@ -904,6 +904,7 @@ body {
   text-rendering: auto;
   -webkit-font-smoothing: antialiased;
   font: var(--fa-font-solid) !important;
+  cursor: pointer;
 
   &::before {
     width: var(--main-icon-size);
@@ -983,6 +984,14 @@ body {
 
 .icon-search::before {
   content: "\f002";
+}
+
+.icon-signature::before {
+  content: "\f573";
+}
+
+.icon-clear::before {
+  content: "\f00d";
 }
 
 .icon-print::before {

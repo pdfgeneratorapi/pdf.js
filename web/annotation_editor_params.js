@@ -27,7 +27,7 @@ import { AnnotationEditorParamsType } from "pdfjs-lib";
  * @property {HTMLButtonElement} editorStampAddImage
  * @property {HTMLInputElement} editorFreeHighlightThickness
  * @property {HTMLButtonElement} editorHighlightShowAll
- * @property {HTMLButtonElement} editorSignatureAddSignature
+ * @property {HTMLButtonElement} editorSignatureButton
  */
 
 class AnnotationEditorParams {
@@ -52,7 +52,7 @@ class AnnotationEditorParams {
     editorStampAddImage,
     editorFreeHighlightThickness,
     editorHighlightShowAll,
-    editorSignatureAddSignature,
+    editorSignatureButton,
   }) {
     const { eventBus } = this;
 
@@ -96,7 +96,7 @@ class AnnotationEditorParams {
       this.setAttribute("aria-pressed", !checked);
       dispatchEvent("HIGHLIGHT_SHOW_ALL", !checked);
     });
-    editorSignatureAddSignature.addEventListener("click", () => {
+    editorSignatureButton.addEventListener("click", () => {
       dispatchEvent("CREATE");
     });
 

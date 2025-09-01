@@ -15,6 +15,7 @@
 
 /** @typedef {import("./event_utils.js").EventBus} EventBus */
 
+import { AnnotationEditorParamsType } from "./pdfjs.js";
 import { toggleExpandedBtn } from "./ui_utils.js";
 
 /**
@@ -22,6 +23,7 @@ import { toggleExpandedBtn } from "./ui_utils.js";
  * @property {HTMLDivElement} toolbar - Container for the secondary toolbar.
  * @property {HTMLButtonElement} toggleButton - Button to toggle the visibility
  *   of the secondary toolbar.
+ * @property {HTMLButtonElement} signatureButton - Button to add a signature to the document.
  * @property {HTMLButtonElement} printButton - Button to print the document.
  * @property {HTMLButtonElement} downloadButton - Button to download the
  *   document.
@@ -38,6 +40,15 @@ class SecondaryToolbar {
   constructor(options, eventBus) {
     this.#opts = options;
     const buttons = [
+      {
+        element: options.signatureButton,
+        eventName: "switchannotationeditorparams",
+        close: false,
+        eventDetails: {
+          source: this,
+          type: AnnotationEditorParamsType.CREATE,
+        },
+      },
       { element: options.printButton, eventName: "print", close: true },
       { element: options.downloadButton, eventName: "download", close: true },
       { element: options.uploadButton, eventName: "upload", close: true },

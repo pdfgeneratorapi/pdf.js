@@ -978,6 +978,11 @@ class PDFViewer {
               this.#editorUndoBar,
               this.#supportsPinchToZoom
             );
+
+            if (this.#signatureManager) {
+              this.annotationEditorMode = { mode: AnnotationEditorType.SIGNATURE }
+            }
+
             eventBus.dispatch("annotationeditoruimanager", {
               source: this,
               uiManager: this.#annotationEditorUIManager,
@@ -2417,10 +2422,6 @@ class PDFViewer {
     switch (mode) {
       case AnnotationEditorType.STAMP:
         this.#mlManager?.loadModel("altText");
-        break;
-      case AnnotationEditorType.SIGNATURE:
-        // Start to load the signature data.
-        this.#signatureManager?.loadSignatures();
         break;
     }
   }

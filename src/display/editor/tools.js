@@ -1800,9 +1800,6 @@ class AnnotationEditorUIManager {
       this.#updateModeCapability.resolve();
       return;
     }
-    if (mode === AnnotationEditorType.SIGNATURE) {
-      await this.#signatureManager?.loadSignatures();
-    }
     this.setEditingState(true);
     await this.#enableAll();
     this.unselectAll();

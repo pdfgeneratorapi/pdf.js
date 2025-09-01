@@ -483,9 +483,6 @@ const PDFViewerApplication = {
       AppOptions.get("enableSignatureEditor") && appConfig.addSignatureDialog
         ? new SignatureManager(
             appConfig.addSignatureDialog,
-            appConfig.editSignatureDialog,
-            appConfig.annotationEditorParams?.editorSignatureAddSignature ||
-              null,
             overlayManager,
             l10n,
             externalServices.createSignatureStorage(eventBus, abortSignal),
@@ -583,10 +580,6 @@ const PDFViewerApplication = {
 
     if (appConfig.annotationEditorParams) {
       if (annotationEditorMode !== AnnotationEditorType.DISABLE) {
-        const editorSignatureButton = appConfig.toolbar?.editorSignatureButton;
-        if (editorSignatureButton && AppOptions.get("enableSignatureEditor")) {
-          editorSignatureButton.parentElement.hidden = false;
-        }
         this.annotationEditorParams = new AnnotationEditorParams(
           appConfig.annotationEditorParams,
           eventBus
@@ -820,6 +813,10 @@ const PDFViewerApplication = {
       appConfig.findBar = undefined;
     }
 
+    if (!this.supportsSignature) {
+      this.disableSignature();
+    }
+
     const togglePrintingButtons = visible => {
       appConfig.toolbar?.print?.classList.toggle("hidden", !visible);
       appConfig.secondaryToolbar?.printButton.classList.toggle(
@@ -973,6 +970,21 @@ const PDFViewerApplication = {
     this.findBar.toggleButton?.classList.add("hidden");
   },
 
+  enableSignature() {
+    this.toolbar.signature = true;
+    this.appConfig.toolbar?.signature?.classList.remove("hidden");
+    this.appConfig.secondaryToolbar?.signatureButton.classList.remove("hidden");
+    this.appConfig.addSignatureDialog.dialog.classList.remove("hidden");
+  },
+
+  disableSignature() {
+    this.toolbar.signature = false;
+    this.appConfig.toolbar?.signature?.classList.add("hidden");
+    this.appConfig.secondaryToolbar?.signatureButton.classList.add("hidden");
+    this.appConfig.addSignatureDialog.dialog.classList.add("hidden");
+    this.overlayManager.closeIfActive(this.appConfig.addSignatureDialog.dialog);
+  },
+
   enablePrinting() {
     this.toolbar.printing = true;
     this.appConfig.toolbar?.print?.classList.remove("hidden");
@@ -1031,6 +1043,10 @@ const PDFViewerApplication = {
 
   get supportsTextSearch() {
     return this.toolbar.textSearch === true;
+  },
+
+  get supportsSignature() {
+    return this.toolbar.signature === true;
   },
 
   get supportsPrinting() {
@@ -1104,18 +1120,10 @@ const PDFViewerApplication = {
 
   setTitleUsingUrl(url = "", downloadUrl = null) {
     this.url = url;
-    this.baseUrl =
-      typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")
-        ? updateUrlHash(url, "", /* allowRel = */ true)
-        : updateUrlHash(url, "");
+    this.baseUrl = url.split("#", 1)[0];
     if (downloadUrl) {
       this._downloadUrl =
-        // eslint-disable-next-line no-nested-ternary
-        downloadUrl === url
-          ? this.baseUrl
-          : typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")
-            ? updateUrlHash(downloadUrl, "", /* allowRel = */ true)
-            : updateUrlHash(downloadUrl, "");
+        downloadUrl === url ? this.baseUrl : downloadUrl.split("#", 1)[0];
     }
     if (isDataScheme(url)) {
       this._hideViewBookmark();
@@ -2289,18 +2297,6 @@ const PDFViewerApplication = {
       passive: false,
       signal,
     });
-    window.addEventListener("touchstart", onTouchStart.bind(this), {
-      passive: false,
-      signal,
-    });
-    window.addEventListener("touchmove", onTouchMove.bind(this), {
-      passive: false,
-      signal,
-    });
-    window.addEventListener("touchend", onTouchEnd.bind(this), {
-      passive: false,
-      signal,
-    });
     window.addEventListener("click", onClick.bind(this), { signal });
     window.addEventListener("keydown", onKeyDown.bind(this), { signal });
     window.addEventListener("keyup", onKeyUp.bind(this), { signal });
@@ -2354,18 +2350,19 @@ const PDFViewerApplication = {
         mainContainer);
     }
 
-    let scrollendTimeoutID, scrollAbortController;
     const scrollend = () => {
       if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {
         ({ scrollTop: this._lastScrollTop, scrollLeft: this._lastScrollLeft } =
           mainContainer);
       }
-      clearTimeout(scrollendTimeoutID);
-      if (this._isScrolling) {
-        scrollAbortController.abort();
-        scrollAbortController = null;
-        this._isScrolling = false;
-      }
+
+      this._isScrolling = false;
+      mainContainer.addEventListener("scroll", scroll, {
+        passive: true,
+        signal,
+      });
+      mainContainer.removeEventListener("scrollend", scrollend);
+      mainContainer.removeEventListener("blur", scrollend);
     };
     const scroll = () => {
       if (this._isCtrlKeyDown) {
@@ -2899,6 +2896,10 @@ function closeSecondaryToolbar(evt) {
   ) {
     this.secondaryToolbar.close();
   }
+}
+
+function onClick(evt) {
+  closeSecondaryToolbar.call(this, evt);
 }
 
 function onKeyUp(evt) {

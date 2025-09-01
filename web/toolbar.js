@@ -63,6 +63,7 @@ class Toolbar {
     this.#opts = options;
     this.eventBus = eventBus;
     this.textSearch = true;
+    this.signature = true;
     this.printing = true;
     this.downloading = true;
     this.uploading = true;
@@ -125,18 +126,6 @@ class Toolbar {
         telemetry: {
           type: "editing",
           data: { action: "pdfjs.image.icon_click" },
-        },
-      },
-      {
-        element: options.editorSignatureButton,
-        eventName: "switchannotationeditormode",
-        eventDetails: {
-          get mode() {
-            const { classList } = options.editorSignatureButton;
-            return classList.contains("toggled")
-              ? AnnotationEditorType.NONE
-              : AnnotationEditorType.SIGNATURE;
-          },
         },
       },
     ];
@@ -294,8 +283,6 @@ class Toolbar {
       editorInkParamsToolbar,
       editorStampButton,
       editorStampParamsToolbar,
-      editorSignatureButton,
-      editorSignatureParamsToolbar,
     } = this.#opts;
 
     toggleExpandedBtn(
@@ -318,18 +305,12 @@ class Toolbar {
       mode === AnnotationEditorType.STAMP,
       editorStampParamsToolbar
     );
-    toggleExpandedBtn(
-      editorSignatureButton,
-      mode === AnnotationEditorType.SIGNATURE,
-      editorSignatureParamsToolbar
-    );
 
     const isDisable = mode === AnnotationEditorType.DISABLE;
     editorFreeTextButton.disabled = isDisable;
     editorHighlightButton.disabled = isDisable;
     editorInkButton.disabled = isDisable;
     editorStampButton.disabled = isDisable;
-    editorSignatureButton.disabled = isDisable;
   }
 
   #updateUIState(resetNumPages = false) {

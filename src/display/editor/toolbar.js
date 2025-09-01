@@ -130,7 +130,7 @@ class EditorToolbar {
     const { editorType, _uiManager } = this.#editor;
 
     const button = document.createElement("button");
-    button.classList.add("basic", "deleteButton");
+    button.classList.add("basic", "deleteButton", "icon", "icon-clear");
     button.tabIndex = 0;
     button.setAttribute("data-l10n-id", EditorToolbar.#l10nRemove[editorType]);
     if (this.#addListenersToElement(button)) {
@@ -182,13 +182,6 @@ class EditorToolbar {
     this.#buttons.append(button, this.#divider);
   }
 
-  async addEditSignatureButton(signatureManager) {
-    const button = (this.#signatureDescriptionButton =
-      await signatureManager.renderEditButton(this.#editor));
-    this.#addListenersToElement(button);
-    this.#buttons.append(button, this.#divider);
-  }
-
   async addButton(name, tool) {
     switch (name) {
       case "colorPicker":
@@ -196,9 +189,6 @@ class EditorToolbar {
         break;
       case "altText":
         await this.addAltText(tool);
-        break;
-      case "editSignature":
-        await this.addEditSignatureButton(tool);
         break;
       case "delete":
         this.addDeleteButton();
