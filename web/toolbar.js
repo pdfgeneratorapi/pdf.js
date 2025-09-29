@@ -40,6 +40,7 @@ import {
  * @property {HTMLButtonElement} zoomOut - Button to zoom out the pages.
  * @property {HTMLButtonElement} editorFreeTextButton - Button to switch to
  *   FreeText editing.
+ * @property {HTMLButtonElement} signature - Button to add a signature to the document.
  * @property {HTMLButtonElement} print - Button to print the document.
  * @property {HTMLButtonElement} download - Button to download the document.
  * @property {HTMLButtonElement} upload - Button to open a document.
@@ -283,6 +284,7 @@ class Toolbar {
       editorInkParamsToolbar,
       editorStampButton,
       editorStampParamsToolbar,
+      signature,
     } = this.#opts;
 
     toggleExpandedBtn(
@@ -311,6 +313,7 @@ class Toolbar {
     editorHighlightButton.disabled = isDisable;
     editorInkButton.disabled = isDisable;
     editorStampButton.disabled = isDisable;
+    signature.disabled = isDisable;
   }
 
   #updateUIState(resetNumPages = false) {

@@ -23,6 +23,7 @@ import {
   KeyboardManager,
 } from "./tools.js";
 import {
+  AnnotationEditorType,
   FeatureTest,
   MathClamp,
   shadow,
@@ -1970,6 +1971,12 @@ class AnnotationEditor {
    * Unselect this editor.
    */
   unselect() {
+    if (this.mode === AnnotationEditorType.SIGNATURE) {
+      this._uiManager._eventBus.dispatch("switchannotationeditormode", {
+        source: this,
+        mode: AnnotationEditorType.NONE,
+      });
+    }
     if (!this.isSelected) {
       return;
     }

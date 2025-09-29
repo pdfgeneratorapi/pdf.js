@@ -979,10 +979,6 @@ class PDFViewer {
               this.#supportsPinchToZoom
             );
 
-            if (this.#signatureManager) {
-              this.annotationEditorMode = { mode: AnnotationEditorType.SIGNATURE }
-            }
-
             eventBus.dispatch("annotationeditoruimanager", {
               source: this,
               uiManager: this.#annotationEditorUIManager,

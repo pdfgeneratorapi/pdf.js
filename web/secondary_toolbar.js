@@ -15,7 +15,7 @@
 
 /** @typedef {import("./event_utils.js").EventBus} EventBus */
 
-import { AnnotationEditorParamsType } from "./pdfjs.js";
+import { AnnotationEditorParamsType, AnnotationEditorType } from "./pdfjs.js";
 import { toggleExpandedBtn } from "./ui_utils.js";
 
 /**
@@ -40,15 +40,7 @@ class SecondaryToolbar {
   constructor(options, eventBus) {
     this.#opts = options;
     const buttons = [
-      {
-        element: options.signatureButton,
-        eventName: "switchannotationeditorparams",
-        close: false,
-        eventDetails: {
-          source: this,
-          type: AnnotationEditorParamsType.CREATE,
-        },
-      },
+      { element: options.signatureButton, eventName: "signature", close: false },
       { element: options.printButton, eventName: "print", close: true },
       { element: options.downloadButton, eventName: "download", close: true },
       { element: options.uploadButton, eventName: "upload", close: true },
@@ -95,14 +87,28 @@ class SecondaryToolbar {
 
     // All items within the secondary toolbar.
     for (const { element, eventName, close, eventDetails } of buttons) {
-      element.addEventListener("click", evt => {
+      element.addEventListener("click", async evt => {
         if (eventName !== null) {
           eventBus.dispatch(eventName, { source: this, ...eventDetails });
+        }
+
+        if (eventName === "signature") {
+          // Change the mode to Signature
+          await eventBus.dispatch("switchannotationeditormode", {
+            source: this,
+            mode: AnnotationEditorType.SIGNATURE,
+          });
+
+          // Show the signature editor
+          await eventBus.dispatch("switchannotationeditorparams", {
+            source: this,
+            type: AnnotationEditorParamsType.CREATE,
+          });
         }
         if (close) {
           this.close();
         }
-        eventBus.dispatch("reporttelemetry", {
+        await eventBus.dispatch("reporttelemetry", {
           source: this,
           details: {
             type: "buttons",

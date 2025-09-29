@@ -15,6 +15,7 @@
 
 import {
   AnnotationEditorParamsType,
+  AnnotationEditorType,
   DOMSVGFactory,
   noContextMenu,
   SignatureExtractor,
@@ -90,6 +91,8 @@ class SignatureManager {
 
   #signatureStorage;
 
+  #signatureToolbarButton;
+
   #uiManager = null;
 
   static #l10nDescription = null;
@@ -117,6 +120,7 @@ class SignatureManager {
       errorBar,
       errorTitle,
       errorDescription,
+      signatureToolbarButton,
     },
     overlayManager,
     l10n,
@@ -142,6 +146,7 @@ class SignatureManager {
     this.#typeInput = typeInput;
     this.#l10n = l10n;
     this.#signatureStorage = signatureStorage;
+    this.#signatureToolbarButton = signatureToolbarButton;
     this.#eventBus = eventBus;
 
     SignatureManager.#l10nDescription ||= Object.freeze({
@@ -163,6 +168,11 @@ class SignatureManager {
     });
     dialog.addEventListener("drop", e => {
       stopEvent(e);
+    });
+    dialog.addEventListener("keydown", async e => {
+      if (e.key === "Escape") {
+        this.#cancel();
+      }
     });
     cancelButton.addEventListener("click", this.#cancel.bind(this));
     addButton.addEventListener("click", this.#add.bind(this));
@@ -657,112 +667,6 @@ class SignatureManager {
     });
   }
 
-  #addToolbarButton(signatureData, uuid, description) {
-    const { curves, areContours, thickness, width, height } = signatureData;
-    const maxDim = Math.max(width, height);
-    const outlineData = SignatureExtractor.processDrawnLines({
-      lines: {
-        curves,
-        thickness,
-        width,
-        height,
-      },
-      pageWidth: maxDim,
-      pageHeight: maxDim,
-      rotation: 0,
-      innerMargin: 0,
-      mustSmooth: false,
-      areContours,
-    });
-    if (!outlineData) {
-      return;
-    }
-
-    const { outline } = outlineData;
-    const svgFactory = new DOMSVGFactory();
-
-    const div = document.createElement("div");
-    const button = document.createElement("button");
-
-    button.addEventListener("click", () => {
-      this.#eventBus.dispatch("switchannotationeditorparams", {
-        source: this,
-        type: AnnotationEditorParamsType.CREATE,
-        value: {
-          signatureData: {
-            lines: {
-              curves,
-              thickness,
-              width,
-              height,
-            },
-            mustSmooth: false,
-            areContours,
-            description,
-            uuid,
-            heightInPage: DEFAULT_HEIGHT_IN_PAGE,
-          },
-        },
-      });
-    });
-    div.append(button);
-    div.classList.add("toolbarAddSignatureButtonContainer");
-
-    const svg = svgFactory.create(1, 1, true);
-    button.append(svg);
-
-    const span = document.createElement("span");
-    span.ariaHidden = true;
-    button.append(span);
-
-    button.classList.add("toolbarAddSignatureButton");
-    button.type = "button";
-    span.textContent = description;
-    button.setAttribute(
-      "data-l10n-id",
-      "pdfjs-editor-add-saved-signature-button"
-    );
-    button.setAttribute("data-l10n-args", JSON.stringify({ description }));
-    button.tabIndex = 0;
-
-    const path = svgFactory.createElement("path");
-    svg.append(path);
-    svg.setAttribute("viewBox", outline.viewBox);
-    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-    if (areContours) {
-      path.classList.add("contours");
-    }
-    path.setAttribute("d", outline.toSVGPath());
-
-    const deleteButton = document.createElement("button");
-    div.append(deleteButton);
-    deleteButton.classList.add("toolbarButton", "deleteButton");
-    deleteButton.setAttribute(
-      "data-l10n-id",
-      "pdfjs-editor-delete-signature-button1"
-    );
-    deleteButton.type = "button";
-    deleteButton.tabIndex = 0;
-    deleteButton.addEventListener("click", async () => {
-      if (await this.#signatureStorage.delete(uuid)) {
-        div.remove();
-        this.#reportTelemetry({
-          type: "signature",
-          action: "pdfjs.signature.delete_saved",
-          data: {
-            savedCount: await this.#signatureStorage.size(),
-          },
-        });
-      }
-    });
-    const deleteSpan = document.createElement("span");
-    deleteButton.append(deleteSpan);
-    deleteSpan.setAttribute(
-      "data-l10n-id",
-      "pdfjs-editor-delete-signature-button-label1"
-    );
-  }
-
   getSignature(params) {
     return this.open(params);
   }
@@ -783,7 +687,14 @@ class SignatureManager {
   }
 
   #cancel() {
-    this.#finish();
+    this.#eventBus.dispatch("switchannotationeditormode", {
+      source: this,
+      mode: AnnotationEditorType.NONE,
+    });
+
+    this.destroy();
+
+    this.#signatureToolbarButton.classList.remove("toggled");
   }
 
   #finish() {
@@ -843,7 +754,7 @@ class SignatureManager {
       null
     );
 
-    this.#finish();
+    this.#cancel();
   }
 
   destroy() {
