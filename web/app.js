@@ -1406,6 +1406,8 @@ const PDFViewerApplication = {
       ? this.save()
       : this.download());
     classList.remove("wait");
+
+    window.parent.postMessage({ type: "document-saved" });
   },
 
   /**
@@ -1720,6 +1722,8 @@ const PDFViewerApplication = {
 
     this._initializePageLabels(pdfDocument);
     this._initializeMetadata(pdfDocument);
+
+    window.parent.postMessage({ type: "document-uploaded" });
   },
 
   /**
@@ -2118,6 +2122,8 @@ const PDFViewerApplication = {
     this.forceRendering();
     // Re-enable the editor-indicator after printing (fixes bug 1790552).
     this.setTitle();
+
+    window.parent.postMessage({ type: "document-printed" });
   },
 
   rotatePages(delta) {
