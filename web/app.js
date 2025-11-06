@@ -1726,6 +1726,22 @@ const PDFViewerApplication = {
     window.parent.postMessage({ type: "document-uploaded" });
   },
 
+  async getBase64Document() {
+    const dataObject = await this.pdfDocument.saveDocument();
+    const byteArray = Uint8Array.from(Object.values(dataObject));
+
+    let binary = "";
+    const chunkSize = 0x8000;
+
+    // Handle huge PDFs
+    for (let i = 0; i < byteArray.length; i += chunkSize) {
+      const chunk = byteArray.subarray(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+
+    return btoa(binary);
+  },
+
   /**
    * @private
    */

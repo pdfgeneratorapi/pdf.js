@@ -755,8 +755,6 @@ class SignatureManager {
     );
 
     this.#cancel();
-
-    window.parent.postMessage({ type: "signature-added" });
   }
 
   destroy() {

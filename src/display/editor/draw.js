@@ -308,6 +308,8 @@ class DrawingEditor extends AnnotationEditor {
         }
       )
     );
+
+    window.parent.postMessage({ type: "signature-added" });
   }
 
   _onStartDragging() {
