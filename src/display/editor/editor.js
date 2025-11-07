@@ -1500,6 +1500,15 @@ class AnnotationEditor {
     this.y = y;
     this.fixAndSetPosition();
     this._onTranslated();
+
+    window.parent.postMessage({
+      type: "document-updated",
+      updates: {
+        type: "signature",
+        editor_id: this.id,
+        coordinates: { x, y },
+      }
+    });
   }
 
   /**
