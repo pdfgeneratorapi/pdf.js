@@ -259,12 +259,6 @@ const PDFViewerApplication = {
       AppOptions.set("externalLinkTarget", LinkTarget.TOP);
     }
 
-    if (window.innerWidth >= this._smallScreenResolution) {
-      AppOptions.set("sidebarViewOnLoad", SidebarView.THUMBS);
-    } else {
-      AppOptions.set("sidebarViewOnLoad", SidebarView.NONE);
-    }
-
     await this._initializeViewerComponents();
 
     // Bind the various event handlers *after* the viewer has been
@@ -1019,6 +1013,21 @@ const PDFViewerApplication = {
     this.toolbar.uploading = false;
     this.appConfig.toolbar?.upload?.classList.add("hidden");
     this.appConfig.secondaryToolbar?.uploadButton.classList.add("hidden");
+  },
+
+  /**
+   * Avoid opening on small-screen devices
+   */
+  showSidebar() {
+    if (window.innerWidth >= this._smallScreenResolution) {
+      AppOptions.set("sidebarViewOnLoad", SidebarView.THUMBS);
+    } else {
+      AppOptions.set("sidebarViewOnLoad", SidebarView.NONE);
+    }
+  },
+
+  hideSidebar() {
+    AppOptions.set("sidebarViewOnLoad", SidebarView.NONE);
   },
 
   showEmptyStateOverlay() {
