@@ -692,6 +692,7 @@ class SignatureManager {
       mode: AnnotationEditorType.NONE,
     });
 
+    this.#currentEditor.select();
     this.destroy();
 
     this.#signatureToolbarButton.classList.remove("toggled");
@@ -754,7 +755,10 @@ class SignatureManager {
       null
     );
 
-    this.#cancel();
+    this.#currentEditor.parent.setSelected(this.#currentEditor);
+
+    this.#finish();
+    this.#signatureToolbarButton.classList.remove("toggled");
 
     window.parent.postMessage({ type: "signature-added" });
   }

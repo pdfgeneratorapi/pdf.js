@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { AnnotationEditorType } from "../../shared/util.js";
 import { noContextMenu, stopEvent } from "../display_utils.js";
 
 class EditorToolbar {
@@ -126,6 +127,28 @@ class EditorToolbar {
     this.#comment?.shown();
   }
 
+  addAcceptButton() {
+    const { _uiManager } = this.#editor;
+
+    const button = document.createElement("button");
+    button.classList.add("basic", "acceptButton", "icon", "icon-check");
+    button.tabIndex = 0;
+    button.title = "Accept signature";
+    if (this.#addListenersToElement(button)) {
+      button.addEventListener(
+        "click",
+        () => {
+          _uiManager._eventBus.dispatch("switchannotationeditormode", {
+            source: this,
+            mode: AnnotationEditorType.NONE,
+          });
+        },
+        { signal: _uiManager._signal }
+      );
+    }
+    this.#buttons.append(button);
+  }
+
   addDeleteButton() {
     const { editorType, _uiManager } = this.#editor;
 
@@ -136,7 +159,13 @@ class EditorToolbar {
     if (this.#addListenersToElement(button)) {
       button.addEventListener(
         "click",
-        e => {
+        () => {
+          if (this.#editor.editorType === "signature") {
+            _uiManager._eventBus.dispatch("switchannotationeditormode", {
+              source: this,
+              mode: AnnotationEditorType.NONE,
+            });
+          }
           _uiManager.delete();
         },
         { signal: _uiManager._signal }
@@ -189,6 +218,9 @@ class EditorToolbar {
         break;
       case "altText":
         await this.addAltText(tool);
+        break;
+      case "accept":
+        this.addAcceptButton();
         break;
       case "delete":
         this.addDeleteButton();

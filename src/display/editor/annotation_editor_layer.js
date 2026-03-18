@@ -824,10 +824,17 @@ class AnnotationEditorLayer {
     }
 
     const currentMode = this.#uiManager.getMode();
-    if (
-      currentMode === AnnotationEditorType.STAMP ||
-      currentMode === AnnotationEditorType.SIGNATURE
-    ) {
+
+    if (currentMode === AnnotationEditorType.SIGNATURE) {
+      this.#uiManager.unselectAll();
+      this.#uiManager._eventBus.dispatch("switchannotationeditormode", {
+        source: this,
+        mode: AnnotationEditorType.NONE,
+      });
+      return;
+    }
+
+    if (currentMode === AnnotationEditorType.STAMP) {
       this.#uiManager.unselectAll();
       return;
     }

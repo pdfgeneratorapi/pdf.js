@@ -994,6 +994,10 @@ body {
   content: "\f00d";
 }
 
+.icon-check::before {
+  content: "\f00c";
+}
+
 .icon-print::before {
   content: "\f02f";
 }

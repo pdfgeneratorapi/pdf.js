@@ -254,10 +254,12 @@ class SignatureEditor extends DrawingEditor {
 
   /** @inheritdoc */
   get toolbarButtons() {
+    const buttons = [];
     if (this._uiManager.signatureManager) {
-      return [["editSignature", this._uiManager.signatureManager]];
+      buttons.push(["editSignature", this._uiManager.signatureManager]);
     }
-    return super.toolbarButtons;
+    buttons.push(["accept"]);
+    return buttons;
   }
 
   addSignature(data, heightInPage, description, uuid) {
@@ -291,9 +293,9 @@ class SignatureEditor extends DrawingEditor {
 
     this.height = newHeight;
     this.setDims(parentWidth * this.width, parentHeight * this.height);
-    this.x = savedX;
-    this.y = savedY;
-    this.center();
+    this.x = (1 - this.width) / 2;
+    this.y = (1 - this.height) / 2;
+    this.fixAndSetPosition();
 
     this._onResized();
     this.onScaleChanging();
