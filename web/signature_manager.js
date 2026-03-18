@@ -759,8 +759,6 @@ class SignatureManager {
 
     this.#finish();
     this.#signatureToolbarButton.classList.remove("toggled");
-
-    window.parent.postMessage({ type: "signature-added" });
   }
 
   destroy() {

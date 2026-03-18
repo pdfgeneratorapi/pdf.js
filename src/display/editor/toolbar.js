@@ -133,7 +133,7 @@ class EditorToolbar {
     const button = document.createElement("button");
     button.classList.add("basic", "acceptButton", "icon", "icon-check");
     button.tabIndex = 0;
-    button.title = "Accept signature";
+    button.title = "Apply signature";
     if (this.#addListenersToElement(button)) {
       button.addEventListener(
         "click",
@@ -142,6 +142,7 @@ class EditorToolbar {
             source: this,
             mode: AnnotationEditorType.NONE,
           });
+          window.parent.postMessage({ type: "signature-added" });
         },
         { signal: _uiManager._signal }
       );

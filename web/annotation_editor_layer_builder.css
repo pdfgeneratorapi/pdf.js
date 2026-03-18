@@ -340,6 +340,20 @@
         &.commentButton::before {
           mask-image: var(--comment-edit-button-icon);
         }
+
+        &.icon::before {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: transparent;
+          color: var(--editor-toolbar-fg-color);
+          font-size: 14px;
+        }
+
+        &.icon:hover::before {
+          background-color: transparent;
+          color: var(--editor-toolbar-hover-fg-color);
+        }
       }
 
       > * {
