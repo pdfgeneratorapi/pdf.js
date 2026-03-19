@@ -826,11 +826,7 @@ class AnnotationEditorLayer {
     const currentMode = this.#uiManager.getMode();
 
     if (currentMode === AnnotationEditorType.SIGNATURE) {
-      this.#uiManager.unselectAll();
-      this.#uiManager._eventBus.dispatch("switchannotationeditormode", {
-        source: this,
-        mode: AnnotationEditorType.NONE,
-      });
+      window.parent.postMessage({ type: "signature-click-outside" });
       return;
     }
 
