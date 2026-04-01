@@ -311,9 +311,9 @@ class SignatureEditor extends DrawingEditor {
     if (this.#targetRect) {
       // Place the signature at the placeholder field's position.
       const target = this.#targetRect;
-      // Center the signature within the target rect.
+      // Center horizontally, align bottom edge to the placeholder's bottom.
       this.x = target.x + (target.width - this.width) / 2;
-      this.y = target.y + (target.height - this.height) / 2;
+      this.y = target.y + (target.height - this.height) * 6;
       // Hide the "Sign here" placeholder now that a signature is placed.
       target.onSignaturePlaced?.();
       this.#onPlaceholderRestore = target.onPlaceholderRestore || null;
