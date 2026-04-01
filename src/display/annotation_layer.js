@@ -1799,6 +1799,17 @@ class SignatureWidgetAnnotationElement extends WidgetAnnotationElement {
       return this.container;
     }
 
+    // Scale up the container height (form fields are often very thin).
+    const heightScale = 5;
+    const currentHeight = parseFloat(this.container.style.height);
+    if (currentHeight) {
+      const newHeight = currentHeight * heightScale;
+      // Shift upward to keep the bottom edge in the same position.
+      const currentTop = parseFloat(this.container.style.top);
+      this.container.style.height = `${newHeight}%`;
+      this.container.style.top = `${currentTop - (newHeight - currentHeight)}%`;
+    }
+
     // Render a "Sign here" placeholder button for empty signature fields.
     const button = document.createElement("button");
     button.classList.add("signaturePlaceholder");
@@ -1833,9 +1844,12 @@ class SignatureWidgetAnnotationElement extends WidgetAnnotationElement {
         width:
           (normalizedRect[2] - normalizedRect[0]) / pageWidth,
         height:
-          (normalizedRect[3] - normalizedRect[1]) / pageHeight,
+          (normalizedRect[3] - normalizedRect[1]) / pageHeight * 3,
         onSignaturePlaced() {
           container.hidden = true;
+        },
+        onPlaceholderRestore() {
+          container.hidden = false;
         },
       };
 

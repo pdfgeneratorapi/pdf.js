@@ -70,6 +70,8 @@ class SignatureEditor extends DrawingEditor {
 
   #targetRect = null;
 
+  #onPlaceholderRestore = null;
+
   static _type = "signature";
 
   static _editorType = AnnotationEditorType.SIGNATURE;
@@ -210,6 +212,15 @@ class SignatureEditor extends DrawingEditor {
     return this.div;
   }
 
+  /** @inheritdoc */
+  remove() {
+    if (this.#onPlaceholderRestore) {
+      this.#onPlaceholderRestore();
+      this.#onPlaceholderRestore = null;
+    }
+    super.remove();
+  }
+
   setUuid(uuid) {
     this.#signatureUUID = uuid;
     this.addEditToolbar();
@@ -305,6 +316,7 @@ class SignatureEditor extends DrawingEditor {
       this.y = target.y + (target.height - this.height) / 2;
       // Hide the "Sign here" placeholder now that a signature is placed.
       target.onSignaturePlaced?.();
+      this.#onPlaceholderRestore = target.onPlaceholderRestore || null;
       this.#targetRect = null;
     } else {
       this.x = (1 - this.width) / 2;
