@@ -68,6 +68,8 @@ class SignatureEditor extends DrawingEditor {
 
   #signatureUUID = null;
 
+  #targetRect = null;
+
   static _type = "signature";
 
   static _editorType = AnnotationEditorType.SIGNATURE;
@@ -78,6 +80,7 @@ class SignatureEditor extends DrawingEditor {
     super({ ...params, mustBeCommitted: true, name: "signatureEditor" });
     this._willKeepAspectRatio = true;
     this.#signatureData = params.signatureData || null;
+    this.#targetRect = params.targetRect || null;
     this.#description = null;
     this.defaultL10nId = "pdfjs-editor-signature-editor1";
   }
@@ -293,8 +296,20 @@ class SignatureEditor extends DrawingEditor {
 
     this.height = newHeight;
     this.setDims(parentWidth * this.width, parentHeight * this.height);
-    this.x = (1 - this.width) / 2;
-    this.y = (1 - this.height) / 2;
+
+    if (this.#targetRect) {
+      // Place the signature at the placeholder field's position.
+      const target = this.#targetRect;
+      // Center the signature within the target rect.
+      this.x = target.x + (target.width - this.width) / 2;
+      this.y = target.y + (target.height - this.height) / 2;
+      // Hide the "Sign here" placeholder now that a signature is placed.
+      target.onSignaturePlaced?.();
+      this.#targetRect = null;
+    } else {
+      this.x = (1 - this.width) / 2;
+      this.y = (1 - this.height) / 2;
+    }
     this.fixAndSetPosition();
 
     this._onResized();

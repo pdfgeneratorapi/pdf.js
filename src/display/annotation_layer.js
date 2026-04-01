@@ -27,6 +27,7 @@
 
 import {
   AnnotationBorderStyleType,
+  AnnotationEditorParamsType,
   AnnotationEditorType,
   AnnotationPrefix,
   AnnotationType,
@@ -1787,7 +1788,79 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
 
 class SignatureWidgetAnnotationElement extends WidgetAnnotationElement {
   constructor(parameters) {
-    super(parameters, { isRenderable: !!parameters.data.hasOwnCanvas });
+    super(parameters, { isRenderable: true });
+  }
+
+  render() {
+    this.container.classList.add("signatureWidgetAnnotation");
+
+    // If the field already has a canvas appearance, just show the container.
+    if (this.data.hasOwnCanvas) {
+      return this.container;
+    }
+
+    // Render a "Sign here" placeholder button for empty signature fields.
+    const button = document.createElement("button");
+    button.classList.add("signaturePlaceholder");
+    button.textContent = "Sign here";
+    button.title = this.data.alternativeText || "Click to add signature";
+
+    button.addEventListener("click", () => {
+      const uiManager = this.parent._annotationEditorUIManager;
+      if (!uiManager) {
+        return;
+      }
+
+      // Calculate the normalized position of this signature field
+      // relative to the page dimensions.
+      const {
+        data: { rect },
+        parent: { page, viewport },
+      } = this;
+      const { pageWidth, pageHeight, pageX, pageY } = viewport.rawDims;
+      const normalizedRect = Util.normalizeRect([
+        rect[0],
+        page.view[3] - rect[1] + page.view[1],
+        rect[2],
+        page.view[3] - rect[3] + page.view[1],
+      ]);
+
+      // Convert to normalized 0..1 coordinates for the editor.
+      const container = this.container;
+      const targetRect = {
+        x: (normalizedRect[0] - pageX) / pageWidth,
+        y: (normalizedRect[1] - pageY) / pageHeight,
+        width:
+          (normalizedRect[2] - normalizedRect[0]) / pageWidth,
+        height:
+          (normalizedRect[3] - normalizedRect[1]) / pageHeight,
+        onSignaturePlaced() {
+          container.hidden = true;
+        },
+      };
+
+      // Switch to signature mode, then create editor once mode is active.
+      uiManager._eventBus.on(
+        "annotationeditormodechanged",
+        ({ mode }) => {
+          if (mode === AnnotationEditorType.SIGNATURE) {
+            uiManager._eventBus.dispatch("switchannotationeditorparams", {
+              source: this,
+              type: AnnotationEditorParamsType.CREATE,
+              value: { targetRect },
+            });
+          }
+        },
+        { once: true }
+      );
+      uiManager._eventBus.dispatch("switchannotationeditormode", {
+        source: this,
+        mode: AnnotationEditorType.SIGNATURE,
+      });
+    });
+
+    this.container.append(button);
+    return this.container;
   }
 }
 

@@ -3828,7 +3828,8 @@ class SignatureWidgetAnnotation extends WidgetAnnotation {
     // to the main-thread (issue 10347).
     this.data.fieldValue = null;
     this.data.hasOwnCanvas = this.data.noRotate;
-    this.data.noHTML = !this.data.hasOwnCanvas;
+    // Allow empty signature fields to render as HTML placeholders.
+    this.data.noHTML = false;
   }
 
   getFieldObject() {
