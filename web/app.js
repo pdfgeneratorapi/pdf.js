@@ -1217,6 +1217,13 @@ const PDFViewerApplication = {
     if (!this.pdfLoadingTask) {
       return;
     }
+
+    // Reset annotation editor mode to prevent the next document from
+    // being locked in signature (or other editor) mode.
+    this.pdfViewer.annotationEditorMode = {
+      mode: AnnotationEditorType.NONE,
+    };
+
     if (
       (typeof PDFJSDev === "undefined" ||
         PDFJSDev.test("GENERIC && !TESTING")) &&
