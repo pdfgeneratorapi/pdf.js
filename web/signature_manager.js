@@ -83,6 +83,8 @@ class SignatureManager {
 
   #hasDescriptionChanged = false;
 
+  #prefilledName = "";
+
   #eventBus;
 
   #l10n;
@@ -671,6 +673,10 @@ class SignatureManager {
     return this.open(params);
   }
 
+  setPrefilledName(name) {
+    this.#prefilledName = name || "";
+  }
+
   async open({ uiManager, editor }) {
     this.#tabsToAltText ||= new Map(
       this.#tabButtons.keys().map(name => [name, { value: "", default: "" }])
@@ -684,6 +690,17 @@ class SignatureManager {
     const tabType = this.#tabButtons.get("type");
     tabType.focus();
     tabType.click();
+
+    if (this.#prefilledName) {
+      this.#typeInput.value = this.#prefilledName;
+      this.#prefilledName = "";
+      // Mirror what the input listener does in #initTypeTab so the Add /
+      // description buttons reflect the prefilled value.
+      this.#tabsToAltText.get("type").default = this.#description.value =
+        this.#typeInput.value;
+      this.#clearDescription.disabled = this.#typeInput.value === "";
+      this.#disableButtons(this.#typeInput.value);
+    }
   }
 
   #cancel() {

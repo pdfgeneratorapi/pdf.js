@@ -40,6 +40,7 @@ import {
   TextLayerMode,
 } from "./ui_utils.js";
 import {
+  AnnotationEditorParamsType,
   AnnotationEditorType,
   build,
   FeatureTest,
@@ -487,6 +488,7 @@ const PDFViewerApplication = {
       AppOptions.get("enableComment") && appConfig.editCommentDialog
         ? new CommentManager(appConfig.editCommentDialog, overlayManager)
         : null;
+    this.signatureManager = signatureManager;
 
     const enableHWA = AppOptions.get("enableHWA"),
       maxCanvasPixels = AppOptions.get("maxCanvasPixels"),
@@ -751,7 +753,7 @@ const PDFViewerApplication = {
       fileInput.value = null;
       document.body.append(fileInput);
 
-      fileInput.addEventListener("change", function(evt) {
+      fileInput.addEventListener("change", function (evt) {
         const { files } = evt.target;
         if (!files || files.length === 0) {
           return;
@@ -965,18 +967,52 @@ const PDFViewerApplication = {
   },
 
   enableSignature() {
-    this.toolbar.signature = true;
-    this.appConfig.toolbar?.signature?.classList.remove("hidden");
-    this.appConfig.secondaryToolbar?.signatureButton.classList.remove("hidden");
+    this.showSignatureButton();
     this.appConfig.addSignatureDialog.dialog.classList.remove("hidden");
   },
 
   disableSignature() {
+    this.hideSignatureButton();
+    this.appConfig.addSignatureDialog.dialog.classList.add("hidden");
+    this.overlayManager.closeIfActive(this.appConfig.addSignatureDialog.dialog);
+  },
+
+  showSignatureButton() {
+    this.toolbar.signature = true;
+    this.appConfig.toolbar?.signature?.classList.remove("hidden");
+    this.appConfig.secondaryToolbar?.signatureButton.classList.remove("hidden");
+  },
+
+  hideSignatureButton() {
     this.toolbar.signature = false;
     this.appConfig.toolbar?.signature?.classList.add("hidden");
     this.appConfig.secondaryToolbar?.signatureButton.classList.add("hidden");
-    this.appConfig.addSignatureDialog.dialog.classList.add("hidden");
-    this.overlayManager.closeIfActive(this.appConfig.addSignatureDialog.dialog);
+  },
+
+  /**
+   * Opens the signature flow programmatically (e.g. from the parent window):
+   * switches the editor mode to SIGNATURE, prefills the typed-signature input
+   * with the given name and creates a new signature placeholder on the
+   * current page. The user still has to accept the placement before the
+   * "signature-added" postMessage is dispatched.
+   */
+  startSignatureFlow({ name } = {}) {
+    if (!this.signatureManager) {
+      return;
+    }
+
+    this.signatureManager.setPrefilledName(name || "");
+
+    this.eventBus.dispatch("switchannotationeditormode", {
+      source: this,
+      mode: AnnotationEditorType.SIGNATURE,
+    });
+
+    this.eventBus.dispatch("switchannotationeditorparams", {
+      source: this,
+      type: AnnotationEditorParamsType.CREATE,
+      value: null,
+    });
   },
 
   enablePrinting() {
