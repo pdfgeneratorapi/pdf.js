@@ -989,30 +989,27 @@ const PDFViewerApplication = {
     this.appConfig.secondaryToolbar?.signatureButton.classList.add("hidden");
   },
 
-  /**
-   * Opens the signature flow programmatically (e.g. from the parent window):
-   * switches the editor mode to SIGNATURE, prefills the typed-signature input
-   * with the given name and creates a new signature placeholder on the
-   * current page. The user still has to accept the placement before the
-   * "signature-added" postMessage is dispatched.
-   */
-  startSignatureFlow({ name } = {}) {
+  async startSignatureFlow({ name } = {}) {
     if (!this.signatureManager) {
       return;
     }
 
     this.signatureManager.setPrefilledName(name || "");
 
-    this.eventBus.dispatch("switchannotationeditormode", {
+    await this.eventBus.dispatch("switchannotationeditormode", {
       source: this,
       mode: AnnotationEditorType.SIGNATURE,
     });
 
-    this.eventBus.dispatch("switchannotationeditorparams", {
+    await this.eventBus.dispatch("switchannotationeditorparams", {
       source: this,
       type: AnnotationEditorParamsType.CREATE,
       value: null,
     });
+  },
+
+  cancelSignatureFlow() {
+    this.signatureManager?.cancel();
   },
 
   enablePrinting() {

@@ -703,6 +703,10 @@ class SignatureManager {
     }
   }
 
+  cancel() {
+    this.#cancel();
+  }
+
   #cancel() {
     this.#eventBus.dispatch("switchannotationeditormode", {
       source: this,
