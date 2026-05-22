@@ -717,6 +717,8 @@ class SignatureManager {
     this.destroy();
 
     this.#signatureToolbarButton.classList.remove("toggled");
+
+    window.parent.postMessage({ type: "signature-cancelled" });
   }
 
   #finish() {
