@@ -458,24 +458,32 @@ class SignatureManager {
         },
         listenerDrawOptions
       );
-      this.#drawSVG.addEventListener(
-        "pointerup",
-        evt => {
-          const { pointerId: pId } = evt;
-          if (!isNaN(currentPointerId) && currentPointerId !== pId) {
-            return;
-          }
-          currentPointerId = NaN;
-          evt.preventDefault();
+
+      const endStroke = evt => {
+        const { pointerId: pId } = evt;
+
+        if (!isNaN(currentPointerId) && currentPointerId !== pId) {
+          return;
+        }
+
+        currentPointerId = NaN;
+        evt.preventDefault();
+
+        if (this.#drawSVG.hasPointerCapture(pId)) {
           this.#drawSVG.releasePointerCapture(pId);
-          finishDrawAC.abort();
-          if (this.#drawPoints.length === 2) {
-            this.#drawPathString += `L${this.#drawPoints[0]} ${this.#drawPoints[1]}`;
-            this.#drawPath.setAttribute("d", this.#drawPathString);
-          }
-        },
-        listenerDrawOptions
-      );
+        }
+
+        finishDrawAC.abort();
+
+        if (this.#drawPoints.length === 2) {
+          this.#drawPathString += `L${this.#drawPoints[0]} ${this.#drawPoints[1]}`;
+          this.#drawPath.setAttribute("d", this.#drawPathString);
+        }
+      };
+
+      this.#drawSVG.addEventListener("pointerup", endStroke, listenerDrawOptions);
+      this.#drawSVG.addEventListener("pointerleave", endStroke, listenerDrawOptions);
+      this.#drawSVG.addEventListener("pointercancel", endStroke, listenerDrawOptions);
     };
     if (this.#drawCurves) {
       this.#drawSVG.addEventListener("pointerdown", drawCallback, options);

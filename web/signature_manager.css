@@ -365,6 +365,7 @@
             background-color: transparent;
             color: var(--signature-placeholder-color);
             user-select: none;
+            touch-action: none;
           }
 
           > svg {
@@ -374,6 +375,7 @@
             stroke-linecap: round;
             stroke-linejoin: round;
             stroke-miterlimit: 10;
+            touch-action: none;
 
             &:hover {
               cursor: crosshair;
