@@ -166,6 +166,7 @@ class EditorToolbar {
               source: this,
               mode: AnnotationEditorType.NONE,
             });
+            window.parent.postMessage({ type: "signature-cancelled" });
           }
           _uiManager.delete();
         },

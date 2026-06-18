@@ -1807,63 +1807,40 @@ class SignatureWidgetAnnotationElement extends WidgetAnnotationElement {
 
     button.addEventListener("click", () => {
       const uiManager = this.parent._annotationEditorUIManager;
-      if (!uiManager) {
-        return;
+      if (uiManager) {
+        // Normalized position of this signature field relative to the page.
+        const {
+          data: { rect },
+          parent: { page, viewport },
+        } = this;
+        const { pageWidth, pageX, pageY } = viewport.rawDims;
+        const normalizedRect = Util.normalizeRect([
+          rect[0],
+          page.view[3] - rect[1] + page.view[1],
+          rect[2],
+          page.view[3] - rect[3] + page.view[1],
+        ]);
+
+        // Use the button's actual rendered position to account for min-height
+        // expanding the placeholder upward from the bottom.
+        const container = this.container;
+        const pageDivRect = container.parentNode.getBoundingClientRect();
+        const buttonRect = button.getBoundingClientRect();
+        uiManager.signaturePlaceholderRect = {
+          x: (normalizedRect[0] - pageX) / pageWidth,
+          y: (buttonRect.top - pageDivRect.top) / pageDivRect.height,
+          width: (normalizedRect[2] - normalizedRect[0]) / pageWidth,
+          height: buttonRect.height / pageDivRect.height,
+          onSignaturePlaced() {
+            container.hidden = true;
+          },
+          onPlaceholderRestore() {
+            container.hidden = false;
+          },
+        };
       }
 
-      // Calculate the normalized position of this signature field
-      // relative to the page dimensions.
-      const {
-        data: { rect },
-        parent: { page, viewport },
-      } = this;
-      const { pageWidth, pageHeight, pageX, pageY } = viewport.rawDims;
-      const normalizedRect = Util.normalizeRect([
-        rect[0],
-        page.view[3] - rect[1] + page.view[1],
-        rect[2],
-        page.view[3] - rect[3] + page.view[1],
-      ]);
-
-      // Convert to normalized 0..1 coordinates for the editor.
-      // Use the button's actual rendered position to account for
-      // min-height expanding the placeholder upward from the bottom.
-      const container = this.container;
-      const pageDiv = container.parentNode;
-      const pageDivRect = pageDiv.getBoundingClientRect();
-      const buttonRect = button.getBoundingClientRect();
-      const targetRect = {
-        x: (normalizedRect[0] - pageX) / pageWidth,
-        y: (buttonRect.top - pageDivRect.top) / pageDivRect.height,
-        width:
-          (normalizedRect[2] - normalizedRect[0]) / pageWidth,
-        height: buttonRect.height / pageDivRect.height,
-        onSignaturePlaced() {
-          container.hidden = true;
-        },
-        onPlaceholderRestore() {
-          container.hidden = false;
-        },
-      };
-
-      // Switch to signature mode, then create editor once mode is active.
-      uiManager._eventBus.on(
-        "annotationeditormodechanged",
-        ({ mode }) => {
-          if (mode === AnnotationEditorType.SIGNATURE) {
-            uiManager._eventBus.dispatch("switchannotationeditorparams", {
-              source: this,
-              type: AnnotationEditorParamsType.CREATE,
-              value: { targetRect },
-            });
-          }
-        },
-        { once: true }
-      );
-      uiManager._eventBus.dispatch("switchannotationeditormode", {
-        source: this,
-        mode: AnnotationEditorType.SIGNATURE,
-      });
+      window.parent.postMessage({ type: "signature-requested" });
     });
 
     this.container.append(button);

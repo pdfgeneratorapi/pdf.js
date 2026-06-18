@@ -15,7 +15,6 @@
 
 /** @typedef {import("./event_utils.js").EventBus} EventBus */
 
-import { AnnotationEditorParamsType, AnnotationEditorType } from "./pdfjs.js";
 import { toggleExpandedBtn } from "./ui_utils.js";
 
 /**
@@ -93,17 +92,7 @@ class SecondaryToolbar {
         }
 
         if (eventName === "signature") {
-          // Change the mode to Signature
-          await eventBus.dispatch("switchannotationeditormode", {
-            source: this,
-            mode: AnnotationEditorType.SIGNATURE,
-          });
-
-          // Show the signature editor
-          await eventBus.dispatch("switchannotationeditorparams", {
-            source: this,
-            type: AnnotationEditorParamsType.CREATE,
-          });
+          window.parent.postMessage({ type: "signature-requested" });
         }
         if (close) {
           this.close();

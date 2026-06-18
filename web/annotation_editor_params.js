@@ -15,7 +15,7 @@
 
 /** @typedef {import("./event_utils.js").EventBus} EventBus */
 
-import { AnnotationEditorParamsType, AnnotationEditorType } from "pdfjs-lib";
+import { AnnotationEditorParamsType } from "pdfjs-lib";
 
 /**
  * @typedef {Object} AnnotationEditorParamsOptions
@@ -96,17 +96,8 @@ class AnnotationEditorParams {
       this.setAttribute("aria-pressed", !checked);
       dispatchEvent("HIGHLIGHT_SHOW_ALL", !checked);
     });
-    editorSignatureButton.addEventListener("click", async function () {
-      editorSignatureButton.classList.add("toggled");
-
-      // Change the mode to Signature
-      await eventBus.dispatch("switchannotationeditormode", {
-        source: this,
-        mode: AnnotationEditorType.SIGNATURE,
-      });
-
-      // Show the signature editor
-      await dispatchEvent("CREATE");
+    editorSignatureButton.addEventListener("click", function () {
+      window.parent.postMessage({ type: "signature-requested" });
     });
 
     eventBus._on("annotationeditorparamschanged", evt => {

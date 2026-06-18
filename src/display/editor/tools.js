@@ -653,6 +653,8 @@ class AnnotationEditorUIManager {
 
   #mode = AnnotationEditorType.NONE;
 
+  signaturePlaceholderRect = null;
+
   #selectedEditors = new Set();
 
   #selectedTextNode = null;
@@ -1865,6 +1867,16 @@ class AnnotationEditorUIManager {
 
     switch (type) {
       case AnnotationEditorParamsType.CREATE:
+        if (
+          this.#mode === AnnotationEditorType.SIGNATURE &&
+          this.signaturePlaceholderRect
+        ) {
+          value = {
+            ...value,
+            targetRect: value?.targetRect ?? this.signaturePlaceholderRect,
+          };
+          this.signaturePlaceholderRect = null;
+        }
         this.currentLayer.addNewEditor(value);
         return;
       case AnnotationEditorParamsType.HIGHLIGHT_SHOW_ALL:
