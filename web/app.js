@@ -967,11 +967,15 @@ const PDFViewerApplication = {
   },
 
   enableSignature() {
+    this._signingEnabled = true;
+    this.pdfViewer?.annotationEditorUIManager?.setSigningEnabled(true);
     this.showSignatureButton();
     this.appConfig.addSignatureDialog.dialog.classList.remove("hidden");
   },
 
   disableSignature() {
+    this._signingEnabled = false;
+    this.pdfViewer?.annotationEditorUIManager?.setSigningEnabled(false);
     this.hideSignatureButton();
     this.appConfig.addSignatureDialog.dialog.classList.add("hidden");
     this.overlayManager.closeIfActive(this.appConfig.addSignatureDialog.dialog);
@@ -989,7 +993,7 @@ const PDFViewerApplication = {
     this.appConfig.secondaryToolbar?.signatureButton.classList.add("hidden");
   },
 
-  async startSignatureFlow({ name } = {}) {
+  async startSignatureFlow({ name, signatureId } = {}) {
     if (!this.signatureManager) {
       return;
     }
@@ -1001,11 +1005,30 @@ const PDFViewerApplication = {
       mode: AnnotationEditorType.SIGNATURE,
     });
 
+    // Target a specific signature field (from prefill) so the signature is
+    // placed into it. Unknown ids fall back to free placement.
+    if (signatureId) {
+      this.pdfViewer?.annotationEditorUIManager?.focusSignatureField(
+        signatureId
+      );
+    }
+
     await this.eventBus.dispatch("switchannotationeditorparams", {
       source: this,
       type: AnnotationEditorParamsType.CREATE,
       value: null,
     });
+  },
+
+  // Restrict signing to a single signature field (from prefill): only the
+  // matching "Sign here" placeholder stays clickable. The id is cached and
+  // re-applied whenever the annotation editor UI manager is (re)created (see
+  // the "annotationeditoruimanager" listener in bindEvents).
+  setActiveSignatureField(signatureId) {
+    this._activeSignatureFieldId = signatureId || null;
+    this.pdfViewer?.annotationEditorUIManager?.setActiveSignatureField(
+      this._activeSignatureFieldId
+    );
   },
 
   cancelSignatureFlow() {
@@ -2248,6 +2271,16 @@ const PDFViewerApplication = {
     eventBus._on(
       "switchannotationeditormode",
       evt => (pdfViewer.annotationEditorMode = evt),
+      { signal }
+    );
+    eventBus._on(
+      "annotationeditoruimanager",
+      ({ uiManager }) => {
+        uiManager.setSigningEnabled(this._signingEnabled !== false);
+        if (this._activeSignatureFieldId) {
+          uiManager.setActiveSignatureField(this._activeSignatureFieldId);
+        }
+      },
       { signal }
     );
     eventBus._on("print", this.triggerPrinting.bind(this), { signal });

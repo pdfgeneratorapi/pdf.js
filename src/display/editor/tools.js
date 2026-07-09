@@ -655,6 +655,12 @@ class AnnotationEditorUIManager {
 
   signaturePlaceholderRect = null;
 
+  #signatureFields = new Map();
+
+  #activeSignatureFieldId = null;
+
+  #signingEnabled = true;
+
   #selectedEditors = new Set();
 
   #selectedTextNode = null;
@@ -1853,6 +1859,89 @@ class AnnotationEditorUIManager {
       source: this,
       ...options,
     });
+  }
+
+  /**
+   * Re-apply the signature-field restriction across every registered field:
+   * when signing is disabled, no field is active; otherwise, when a target
+   * field is set (and present), only that field stays active; otherwise every
+   * field is active. Inactive fields are hidden (see the `setActive` callback
+   * in the annotation layer), so at most one placeholder is ever visible.
+   */
+  #applySignatureFieldRestriction() {
+    const hasTarget =
+      this.#activeSignatureFieldId !== null &&
+      this.#signatureFields.has(this.#activeSignatureFieldId);
+    for (const [fieldName, entry] of this.#signatureFields) {
+      const active =
+        this.#signingEnabled &&
+        (!hasTarget || fieldName === this.#activeSignatureFieldId);
+      entry.setActive?.(active);
+    }
+  }
+
+  /**
+   * Register a signature placeholder field so it can be targeted by id (e.g.
+   * from the host acknowledgement flow) and restricted via
+   * {@link setActiveSignatureField}. Re-registering the same field name (for
+   * instance on re-render) overwrites the previous entry.
+   * @param {string} fieldName - the AcroForm field name (its `/T`).
+   * @param {Object} entry
+   * @param {function():Object} entry.getRect - lazily computes the normalized
+   *   placeholder rect (see {@link signaturePlaceholderRect}).
+   * @param {function(boolean)} entry.setActive - toggles the field's clickable
+   *   state.
+   */
+  registerSignatureField(fieldName, entry) {
+    if (!fieldName) {
+      return;
+    }
+
+    this.#signatureFields.set(fieldName, entry);
+    this.#applySignatureFieldRestriction();
+  }
+
+  /**
+   * Restrict signing to a single signature field: only the field whose name
+   * matches `id` stays clickable. Passing null (or an id that matches no
+   * registered field) clears the restriction and leaves every field active.
+   * @param {string|null} id
+   */
+  setActiveSignatureField(id) {
+    this.#activeSignatureFieldId = id || null;
+    this.#applySignatureFieldRestriction();
+  }
+
+  /**
+   * Enable or disable signing across the whole document. When disabled (e.g. a
+   * read-only or acknowledgement-only view) every signature placeholder is
+   * hidden so the document can neither be signed nor acknowledged. Defaults to
+   * enabled.
+   * @param {boolean} enabled
+   */
+  setSigningEnabled(enabled) {
+    const next = enabled !== false;
+    if (next === this.#signingEnabled) {
+      return;
+    }
+    this.#signingEnabled = next;
+    this.#applySignatureFieldRestriction();
+  }
+
+  /**
+   * Seed {@link signaturePlaceholderRect} from a registered field so a newly
+   * created signature snaps into it, even when signing is triggered
+   * programmatically (not by clicking the placeholder).
+   * @param {string} fieldName
+   * @returns {boolean} whether a matching field was found.
+   */
+  focusSignatureField(fieldName) {
+    const entry = fieldName ? this.#signatureFields.get(fieldName) : null;
+    if (!entry) {
+      return false;
+    }
+    this.signaturePlaceholderRect = entry.getRect();
+    return true;
   }
 
   /**

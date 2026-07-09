@@ -1800,48 +1800,59 @@ class SignatureWidgetAnnotationElement extends WidgetAnnotationElement {
     }
 
     // Render a "Sign here" placeholder button for empty signature fields.
+    const uiManager = this.parent._annotationEditorUIManager;
+    const fieldName = this.data.fieldName;
+
     const button = document.createElement("button");
     button.classList.add("signaturePlaceholder");
     button.textContent = "Sign here";
     button.title = this.data.alternativeText || "Click to add signature";
 
+    const computeRect = () => {
+      const {
+        data: { rect },
+        parent: { page, viewport },
+      } = this;
+      const { pageWidth, pageX } = viewport.rawDims;
+      const normalizedRect = Util.normalizeRect([
+        rect[0],
+        page.view[3] - rect[1] + page.view[1],
+        rect[2],
+        page.view[3] - rect[3] + page.view[1],
+      ]);
+      const container = this.container;
+      const pageDivRect = container.parentNode.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      return {
+        x: (normalizedRect[0] - pageX) / pageWidth,
+        y: (buttonRect.top - pageDivRect.top) / pageDivRect.height,
+        width: (normalizedRect[2] - normalizedRect[0]) / pageWidth,
+        height: buttonRect.height / pageDivRect.height,
+        onSignaturePlaced() {
+          container.hidden = true;
+        },
+        onPlaceholderRestore() {
+          container.hidden = false;
+        },
+      };
+    };
+
     button.addEventListener("click", () => {
-      const uiManager = this.parent._annotationEditorUIManager;
       if (uiManager) {
-        // Normalized position of this signature field relative to the page.
-        const {
-          data: { rect },
-          parent: { page, viewport },
-        } = this;
-        const { pageWidth, pageX, pageY } = viewport.rawDims;
-        const normalizedRect = Util.normalizeRect([
-          rect[0],
-          page.view[3] - rect[1] + page.view[1],
-          rect[2],
-          page.view[3] - rect[3] + page.view[1],
-        ]);
-
-        // Use the button's actual rendered position to account for min-height
-        // expanding the placeholder upward from the bottom.
-        const container = this.container;
-        const pageDivRect = container.parentNode.getBoundingClientRect();
-        const buttonRect = button.getBoundingClientRect();
-        uiManager.signaturePlaceholderRect = {
-          x: (normalizedRect[0] - pageX) / pageWidth,
-          y: (buttonRect.top - pageDivRect.top) / pageDivRect.height,
-          width: (normalizedRect[2] - normalizedRect[0]) / pageWidth,
-          height: buttonRect.height / pageDivRect.height,
-          onSignaturePlaced() {
-            container.hidden = true;
-          },
-          onPlaceholderRestore() {
-            container.hidden = false;
-          },
-        };
+        uiManager.signaturePlaceholderRect = computeRect();
       }
-
-      window.parent.postMessage({ type: "signature-requested" });
+      window.parent.postMessage({ type: "signature-requested", fieldName });
     });
+
+    if (uiManager && fieldName) {
+      uiManager.registerSignatureField(fieldName, {
+        getRect: computeRect,
+        setActive: active => {
+          button.disabled = !active;
+          this.container.classList.toggle("signatureFieldHidden", !active);
+        },
+      });
+    }
 
     this.container.append(button);
     return this.container;

@@ -313,6 +313,10 @@
     }
   }
 
+  .signatureWidgetAnnotation.signatureFieldHidden {
+    display: none;
+  }
+
   .textWidgetAnnotation input.comb {
     font-family: monospace;
     padding-left: 2px;
