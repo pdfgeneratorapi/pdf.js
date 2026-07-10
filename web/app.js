@@ -55,6 +55,7 @@ import {
   PDFWorker,
   ResponseException,
   shadow,
+  signatureFieldController,
   stopEvent,
   version,
 } from "pdfjs-lib";
@@ -967,15 +968,13 @@ const PDFViewerApplication = {
   },
 
   enableSignature() {
-    this._signingEnabled = true;
-    this.pdfViewer?.annotationEditorUIManager?.setSigningEnabled(true);
+    signatureFieldController.setSigningEnabled(true);
     this.showSignatureButton();
     this.appConfig.addSignatureDialog.dialog.classList.remove("hidden");
   },
 
   disableSignature() {
-    this._signingEnabled = false;
-    this.pdfViewer?.annotationEditorUIManager?.setSigningEnabled(false);
+    signatureFieldController.setSigningEnabled(false);
     this.hideSignatureButton();
     this.appConfig.addSignatureDialog.dialog.classList.add("hidden");
     this.overlayManager.closeIfActive(this.appConfig.addSignatureDialog.dialog);
@@ -1021,11 +1020,10 @@ const PDFViewerApplication = {
   },
 
   // Restrict signing to a single signature field (from prefill): only the
-  // matching "Sign here" placeholder stays clickable. The id is cached and
-  // re-applied whenever the annotation editor UI manager is (re)created (see
-  // the "annotationeditoruimanager" listener in bindEvents).
+  // matching "Sign here" placeholder stays visible.
   setActiveSignatureField(signatureId) {
     this._activeSignatureFieldId = signatureId || null;
+    signatureFieldController.setActiveField(this._activeSignatureFieldId);
     this.pdfViewer?.annotationEditorUIManager?.setActiveSignatureField(
       this._activeSignatureFieldId
     );
@@ -1279,6 +1277,9 @@ const PDFViewerApplication = {
     this.pdfViewer.annotationEditorMode = {
       mode: AnnotationEditorType.NONE,
     };
+
+    signatureFieldController.reset();
+    this._activeSignatureFieldId = null;
 
     if (
       (typeof PDFJSDev === "undefined" ||
@@ -2276,7 +2277,6 @@ const PDFViewerApplication = {
     eventBus._on(
       "annotationeditoruimanager",
       ({ uiManager }) => {
-        uiManager.setSigningEnabled(this._signingEnabled !== false);
         if (this._activeSignatureFieldId) {
           uiManager.setActiveSignatureField(this._activeSignatureFieldId);
         }

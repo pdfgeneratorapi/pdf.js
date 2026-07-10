@@ -40,6 +40,7 @@ import {
 } from "../shared/util.js";
 import { PDFDateString, setLayerDimensions } from "./display_utils.js";
 import { AnnotationStorage } from "./annotation_storage.js";
+import { signatureFieldController } from "./signature_field_controller.js";
 import { ColorConverters } from "../shared/scripting_utils.js";
 import { DOMSVGFactory } from "./svg_factory.js";
 import { XfaLayer } from "./xfa_layer.js";
@@ -1844,14 +1845,14 @@ class SignatureWidgetAnnotationElement extends WidgetAnnotationElement {
       window.parent.postMessage({ type: "signature-requested", fieldName });
     });
 
-    if (uiManager && fieldName) {
-      uiManager.registerSignatureField(fieldName, {
-        getRect: computeRect,
-        setActive: active => {
-          button.disabled = !active;
-          this.container.classList.toggle("signatureFieldHidden", !active);
-        },
-      });
+    const setActive = active => {
+      button.disabled = !active;
+      this.container.classList.toggle("signatureFieldHidden", !active);
+    };
+
+    if (fieldName) {
+      signatureFieldController.register(fieldName, { setActive });
+      uiManager?.registerSignatureField(fieldName, { getRect: computeRect });
     }
 
     this.container.append(button);
