@@ -3823,6 +3823,13 @@ class SignatureWidgetAnnotation extends WidgetAnnotation {
   constructor(params) {
     super(params);
 
+    // Whether this field already holds a signature. The value itself is a
+    // `Dict` and is dropped below, but the main thread still needs to know:
+    // a signed field must not offer a "Sign here" placeholder over the
+    // signature it is already showing.
+    this.data.isSigned =
+      getInheritableProperty({ dict: params.dict, key: "V" }) instanceof Dict;
+
     // Unset the fieldValue since it's (most likely) a `Dict` which is
     // non-serializable and will thus cause errors when sending annotations
     // to the main-thread (issue 10347).

@@ -1869,13 +1869,14 @@ class AnnotationEditorUIManager {
    * in the annotation layer), so at most one placeholder is ever visible.
    */
   #applySignatureFieldRestriction() {
-    const hasTarget =
-      this.#activeSignatureFieldId !== null &&
-      this.#signatureFields.has(this.#activeSignatureFieldId);
+    // A target that matches no registered field activates *nothing*. Failing
+    // open would offer this signer somebody else's placeholder — which is
+    // exactly what happens once their own field has been signed and so no
+    // longer registers a placeholder at all.
+    const target = this.#activeSignatureFieldId;
     for (const [fieldName, entry] of this.#signatureFields) {
       const active =
-        this.#signingEnabled &&
-        (!hasTarget || fieldName === this.#activeSignatureFieldId);
+        this.#signingEnabled && (target === null || fieldName === target);
       entry.setActive?.(active);
     }
   }
@@ -2081,6 +2082,27 @@ class AnnotationEditorUIManager {
    */
   getEditor(id) {
     return this.#allEditors.get(id);
+  }
+
+  /**
+   * The signature editors currently placed in the document, in insertion
+   * order.
+   *
+   * For hosts that send the signer's mark to a signing service rather than
+   * saving it into the document. Saving it would write a revision holding a
+   * loose annotation, which no PDF reader can account for: every signature
+   * already on the document would start reporting as altered. The mark travels
+   * as data instead, and the document is left untouched.
+   * @returns {Array<AnnotationEditor>}
+   */
+  getSignatureEditors() {
+    const editors = [];
+    for (const editor of this.#allEditors.values()) {
+      if (editor.constructor._type === "signature" && !editor.isEmpty()) {
+        editors.push(editor);
+      }
+    }
+    return editors;
   }
 
   /**

@@ -1800,6 +1800,12 @@ class SignatureWidgetAnnotationElement extends WidgetAnnotationElement {
       return this.container;
     }
 
+    // A signed field shows its own appearance; offering "Sign here" on top of
+    // it would invite a second signer into a box that is already taken.
+    if (this.data.isSigned) {
+      return this.container;
+    }
+
     // Render a "Sign here" placeholder button for empty signature fields.
     const uiManager = this.parent._annotationEditorUIManager;
     const fieldName = this.data.fieldName;
@@ -1829,6 +1835,10 @@ class SignatureWidgetAnnotationElement extends WidgetAnnotationElement {
         y: (buttonRect.top - pageDivRect.top) / pageDivRect.height,
         width: (normalizedRect[2] - normalizedRect[0]) / pageWidth,
         height: buttonRect.height / pageDivRect.height,
+        // Carried through to the editor so a host can report which field the
+        // mark was placed into, and have the signature fill that placeholder
+        // rather than leaving it behind as an unclaimed "Sign here".
+        fieldName,
         onSignaturePlaced() {
           container.hidden = true;
         },

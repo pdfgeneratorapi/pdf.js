@@ -70,6 +70,13 @@ class SignatureEditor extends DrawingEditor {
 
   #targetRect = null;
 
+  /**
+   * AcroForm field name of the placeholder this signature was placed into, or
+   * null when it was placed freely. Read by the viewer app so the signing
+   * service can fill that field instead of creating one beside it.
+   */
+  signatureFieldName = null;
+
   #onPlaceholderRestore = null;
 
   static _type = "signature";
@@ -311,6 +318,7 @@ class SignatureEditor extends DrawingEditor {
     if (this.#targetRect) {
       // Place the signature at the placeholder field's position.
       const target = this.#targetRect;
+      this.signatureFieldName = target.fieldName ?? null;
       // Center horizontally, align bottom edge to the placeholder's bottom.
       this.x = target.x + (target.width - this.width) / 2;
       this.y = target.y + target.height - this.height;

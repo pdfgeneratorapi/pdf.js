@@ -102,6 +102,83 @@ const ViewOnLoad = {
   INITIAL: 1,
 };
 
+// Pixels per PDF point when rasterizing a signature mark. The mark occupies a
+// box a few tens of points tall, so ~4x keeps it crisp in print without
+// producing an image worth megabytes.
+const SIGNATURE_MARK_SCALE = 4;
+
+/**
+ * Rasterize a placed signature to a transparent PNG.
+ *
+ * The mark is rendered as SVG in the editor layer, so it is serialized and
+ * repainted onto a canvas rather than rebuilt from the editor's internals:
+ * drawn, typed and uploaded signatures use different outline classes but all
+ * three end up as the same `<svg>` in the DOM.
+ *
+ * @param {AnnotationEditor} editor
+ * @returns {Promise<string|null>} base64 PNG, without the data-URL prefix.
+ */
+async function rasterizeSignatureMark(editor) {
+  // Drawings are rendered into the page's shared draw layer, not inside the
+  // editor's own div, so the markup has to be fetched by draw id.
+  const source = editor.parent?.drawLayer?.getRootElement(editor._drawId);
+  if (!source) {
+    throw new Error("the drawing is not in the page's draw layer");
+  }
+  const { width, height } = source.getBoundingClientRect();
+  if (!width || !height) {
+    throw new Error("the drawing has no size on screen");
+  }
+
+  const svg = source.cloneNode(true);
+  svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  svg.setAttribute("width", `${width}`);
+  svg.setAttribute("height", `${height}`);
+  if (!svg.getAttribute("viewBox")) {
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  }
+  // Stroke and fill may come from a stylesheet that will not travel with the
+  // serialized markup, so copy the computed values onto each path inline.
+  const sourcePaths = source.querySelectorAll("path");
+  const clonedPaths = svg.querySelectorAll("path");
+  for (let i = 0; i < clonedPaths.length; i++) {
+    const computed = window.getComputedStyle(sourcePaths[i]);
+    for (const property of [
+      "fill",
+      "stroke",
+      "stroke-width",
+      "stroke-linecap",
+      "stroke-linejoin",
+    ]) {
+      clonedPaths[i].setAttribute(
+        property,
+        computed.getPropertyValue(property)
+      );
+    }
+  }
+
+  const url = URL.createObjectURL(
+    new Blob([new XMLSerializer().serializeToString(svg)], {
+      type: "image/svg+xml;charset=utf-8",
+    })
+  );
+  try {
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error("Could not rasterize the mark"));
+      image.src = url;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * SIGNATURE_MARK_SCALE));
+    canvas.height = Math.max(1, Math.round(height * SIGNATURE_MARK_SCALE));
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/png").split(",")[1];
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 const PDFViewerApplication = {
   initialBookmark: document.location.hash.substring(1),
   _initializedCapability: {
@@ -1007,7 +1084,7 @@ const PDFViewerApplication = {
     // Target a specific signature field (from prefill) so the signature is
     // placed into it. Unknown ids fall back to free placement.
     if (signatureId) {
-      this.pdfViewer?.annotationEditorUIManager?.focusSignatureField(
+      this._annotationEditorUIManager?.focusSignatureField(
         signatureId
       );
     }
@@ -1024,13 +1101,67 @@ const PDFViewerApplication = {
   setActiveSignatureField(signatureId) {
     this._activeSignatureFieldId = signatureId || null;
     signatureFieldController.setActiveField(this._activeSignatureFieldId);
-    this.pdfViewer?.annotationEditorUIManager?.setActiveSignatureField(
+    this._annotationEditorUIManager?.setActiveSignatureField(
       this._activeSignatureFieldId
     );
   },
 
   cancelSignatureFlow() {
     this.signatureManager?.cancel();
+  },
+
+  /**
+   * The signer's mark and where it sits, leaving the document untouched.
+   *
+   * Use this instead of `getBase64Document` when the document is sealed
+   * server-side. Saving the document here would append a revision containing a
+   * bare annotation; a PDF reader has no rule that explains such a revision, so
+   * every signature already on the document would start reporting as "altered
+   * or corrupted since it was signed". Handing the mark over as data means the
+   * signing service can make it the appearance of the signature field itself,
+   * which readers accept however many signers a document collects.
+   *
+   * @returns {Promise<Object>} `{image, page, rect, field}` — a base64 PNG
+   *   with no data-URL prefix, the 1-based page, the box in PDF user space as
+   *   `[x1, y1, x2, y2]` with the origin bottom-left, and the AcroForm name of
+   *   the placeholder the mark was placed into (null if placed freely).
+   * @throws {Error} naming what was missing, when no mark can be read.
+   */
+  async getSignatureAppearance() {
+    // Each failure names itself: this runs in an iframe, in an async listener,
+    // and a bare null here tells the host nothing about what went wrong.
+    if (!this._annotationEditorUIManager) {
+      throw new Error("the editor manager is not available");
+    }
+    const editors = this._annotationEditorUIManager.getSignatureEditors();
+    if (!editors.length) {
+      throw new Error("no signature was placed");
+    }
+    // The last one placed belongs to this signer; earlier signatures are
+    // already sealed into the document and are not editors any more.
+    const editor = editors.at(-1);
+    const serialized = editor.serialize();
+    if (!serialized?.rect) {
+      throw new Error("the signature has no position on the page");
+    }
+    const image = await rasterizeSignatureMark(editor);
+    if (!image) {
+      throw new Error("the signature drawing could not be rasterized");
+    }
+
+    // The mark has been handed over; it was never meant to become part of this
+    // copy of the document. Left marked as modified, `close()` would "rescue"
+    // it on the host's next load by saving — and in a generic build a save is
+    // a file pushed at the browser's download manager.
+    this.pdfDocument?.annotationStorage.resetModified();
+    delete this._annotationStorageModified;
+
+    return {
+      image,
+      page: (serialized.pageIndex ?? 0) + 1,
+      rect: serialized.rect.map(Number),
+      field: editor.signatureFieldName ?? null,
+    };
   },
 
   enablePrinting() {
@@ -2277,6 +2408,10 @@ const PDFViewerApplication = {
     eventBus._on(
       "annotationeditoruimanager",
       ({ uiManager }) => {
+        // `pdfViewer.annotationEditorUIManager` does not exist — the manager is
+        // only exposed on the viewer's internal `_layerProperties`. This event
+        // is the one place a host can get hold of it.
+        this._annotationEditorUIManager = uiManager;
         if (this._activeSignatureFieldId) {
           uiManager.setActiveSignatureField(this._activeSignatureFieldId);
         }

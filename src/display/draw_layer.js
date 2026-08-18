@@ -183,6 +183,20 @@ class DrawLayer {
     this.updateProperties(id, properties);
   }
 
+  /**
+   * The `<svg>` root a drawing was rendered into, by its draw id.
+   *
+   * Drawings do not live inside their editor's div — they are rendered here,
+   * in a layer shared by the whole page — so a host that wants to rasterize
+   * one (to send a signature's mark to a signing service, say) has no other
+   * way to reach the markup.
+   * @param {number} id
+   * @returns {SVGSVGElement|undefined}
+   */
+  getRootElement(id) {
+    return this.#mapping.get(id);
+  }
+
   updateProperties(elementOrId, properties) {
     if (!properties) {
       return;
