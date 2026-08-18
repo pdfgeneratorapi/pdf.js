@@ -107,6 +107,11 @@ const ViewOnLoad = {
 // producing an image worth megabytes.
 const SIGNATURE_MARK_SCALE = 4;
 
+// How long to wait for signature editing mode to take effect. Switching can
+// cost a page re-render, so it is not instant; this only has to be long enough
+// that a slow one is not cut short.
+const SIGNATURE_MODE_TIMEOUT = 5000; // ms
+
 /**
  * Rasterize a placed signature to a transparent PNG.
  *
@@ -1069,6 +1074,43 @@ const PDFViewerApplication = {
     this.appConfig.secondaryToolbar?.signatureButton.classList.add("hidden");
   },
 
+  /**
+   * Enter signature editing mode, and return once it is actually in effect.
+   */
+  async enterSignatureMode() {
+    const { eventBus } = this;
+    const isReady = () =>
+      this._annotationEditorUIManager?.getMode() ===
+        AnnotationEditorType.SIGNATURE &&
+      !!this._annotationEditorUIManager.currentLayer;
+
+    eventBus.dispatch("switchannotationeditormode", {
+      source: this,
+      mode: AnnotationEditorType.SIGNATURE,
+    });
+    if (isReady()) {
+      return;
+    }
+
+    await new Promise(resolve => {
+      let timeoutId = null;
+      const stopWaiting = () => {
+        clearTimeout(timeoutId);
+        eventBus._off("annotationeditormodechanged", onModeChanged);
+        resolve();
+      };
+      const onModeChanged = ({ mode }) => {
+        if (mode === AnnotationEditorType.SIGNATURE) {
+          stopWaiting();
+        }
+      };
+      eventBus._on("annotationeditormodechanged", onModeChanged);
+      // Never leave the caller hanging on a switch that cannot complete: give
+      // up and let it try, rather than freezing the UI that is waiting on us.
+      timeoutId = setTimeout(stopWaiting, SIGNATURE_MODE_TIMEOUT);
+    });
+  },
+
   async startSignatureFlow({ name, signatureId } = {}) {
     if (!this.signatureManager) {
       return;
@@ -1076,17 +1118,15 @@ const PDFViewerApplication = {
 
     this.signatureManager.setPrefilledName(name || "");
 
-    await this.eventBus.dispatch("switchannotationeditormode", {
-      source: this,
-      mode: AnnotationEditorType.SIGNATURE,
-    });
+    await this.enterSignatureMode();
+
+    this._annotationEditorUIManager?.setActiveEditor(null);
+    this._annotationEditorUIManager?.unselectAll();
 
     // Target a specific signature field (from prefill) so the signature is
     // placed into it. Unknown ids fall back to free placement.
     if (signatureId) {
-      this._annotationEditorUIManager?.focusSignatureField(
-        signatureId
-      );
+      this._annotationEditorUIManager?.focusSignatureField(signatureId);
     }
 
     await this.eventBus.dispatch("switchannotationeditorparams", {
@@ -1112,20 +1152,6 @@ const PDFViewerApplication = {
 
   /**
    * The signer's mark and where it sits, leaving the document untouched.
-   *
-   * Use this instead of `getBase64Document` when the document is sealed
-   * server-side. Saving the document here would append a revision containing a
-   * bare annotation; a PDF reader has no rule that explains such a revision, so
-   * every signature already on the document would start reporting as "altered
-   * or corrupted since it was signed". Handing the mark over as data means the
-   * signing service can make it the appearance of the signature field itself,
-   * which readers accept however many signers a document collects.
-   *
-   * @returns {Promise<Object>} `{image, page, rect, field}` — a base64 PNG
-   *   with no data-URL prefix, the 1-based page, the box in PDF user space as
-   *   `[x1, y1, x2, y2]` with the origin bottom-left, and the AcroForm name of
-   *   the placeholder the mark was placed into (null if placed freely).
-   * @throws {Error} naming what was missing, when no mark can be read.
    */
   async getSignatureAppearance() {
     // Each failure names itself: this runs in an iframe, in an async listener,
@@ -1149,10 +1175,6 @@ const PDFViewerApplication = {
       throw new Error("the signature drawing could not be rasterized");
     }
 
-    // The mark has been handed over; it was never meant to become part of this
-    // copy of the document. Left marked as modified, `close()` would "rescue"
-    // it on the host's next load by saving — and in a generic build a save is
-    // a file pushed at the browser's download manager.
     this.pdfDocument?.annotationStorage.resetModified();
     delete this._annotationStorageModified;
 
